@@ -2,14 +2,15 @@
 {
     public static class ApplicationBuilderExtensions
     {
-        public static IApplicationBuilder AddSwagger(this IApplicationBuilder builder, bool isDevelopment)
+        public static IApplicationBuilder AddSwagger(this IApplicationBuilder app, bool isDevelopment)
         {
             if (isDevelopment)
             {
-                builder.UseSwagger();
-                builder.UseSwaggerUI();
+                app.UseSwagger();
+                app.UseSwaggerUI();
             }
-            return builder;
+            return app;
         }
+
     }
 }

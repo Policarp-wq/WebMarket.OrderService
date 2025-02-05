@@ -5,10 +5,17 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_SERVER": "localhost",
+        "DB_NAME": "orders_managment",
+        "DB_USER": "sans",
+        "DB_PASSWORD": "wannan0wha1j0ke1made?",
+        "REDIS_SERVER": "localhost",
+        "REDIS_PASSWORD": "eiQw£71:!k0M&@Ss",
+        "ASPNETCORE_HTTP_PORTS": "5000"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5156"
+      "applicationUrl": "http://localhost:5000"
     },
     "https": {
       "commandName": "Project",
