@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Serilog;
 using System.Data.Common;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Options;
@@ -27,8 +28,10 @@ namespace WebMarket.OrderService.AppExtensions
                 });
                 dbContextOptBuilder.EnableDetailedErrors(dbOpt.EnabledDetailedErrors);
                 dbContextOptBuilder.EnableSensitiveDataLogging(dbOpt.EnabledSensitiveDataLog);
-                dbContextOptBuilder.LogTo(Console.WriteLine);
+                dbContextOptBuilder.UseLoggerFactory(serviceProvider.GetRequiredService<ILoggerFactory>());
+                //dbContextOptBuilder.LogTo(Console.WriteLine);
             });
+
 
             return services;
         }
@@ -44,7 +47,7 @@ namespace WebMarket.OrderService.AppExtensions
         {
             services.AddHttpClient();
             services.AddSingleton<IMapGeocoder, YandexAPI>(x =>
-                new YandexAPI(x.GetRequiredService<IHttpClientFactory>(), yandexApiKey));
+                new YandexAPI(x.GetRequiredService<IHttpClientFactory>(), x.GetRequiredService<ILogger<YandexAPI>>(), yandexApiKey));
             return services;
         }
     }

@@ -10,11 +10,13 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
         private string _apiKey;
         public static string BasicPath = @"https://geocode-maps.yandex.ru/1.x";
         private readonly HttpClient _httpClient;
-        public YandexAPI(IHttpClientFactory httpClientFactory, string apikey)
+        private readonly ILogger<YandexAPI> _logger;
+        public YandexAPI(IHttpClientFactory httpClientFactory, ILogger<YandexAPI> logger, string apikey)
         {
             _apiKey = apikey;
             _httpClient = httpClientFactory.CreateClient("yandexapi");
             _httpClient.BaseAddress = new Uri($"{BasicPath}?apikey={_apiKey}&lang=ru_RU");
+            _logger = logger;
         }
 
         public async Task<string> GetAddressByLongLat(double longitude, double latitude) //долгота и широта
@@ -24,11 +26,15 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
                 Method = HttpMethod.Get,
                 RequestUri = new Uri($"{BasicPath}?apikey={_apiKey}&lang=ru_RU&geocode={longitude},{latitude}&sco=longlat&format=json")
             };
+            _logger.LogInformation("Send request to yandex api {Uri}", httpGetRequest.RequestUri);
             var response = await _httpClient.SendAsync(httpGetRequest);
             if (!response.IsSuccessStatusCode)
             {
-                return $"{longitude},{latitude}";
+                _logger.LogInformation("Successful response");
+                throw new HttpRequestException($"Bad status code {response.StatusCode}");
             }
+            //api key exposing
+            _logger.LogInformation("Got response for {Uri}", httpGetRequest.RequestUri);
             var body = await response.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(body))
                 throw new HttpRequestException($"Body was null for {httpGetRequest.RequestUri}");
