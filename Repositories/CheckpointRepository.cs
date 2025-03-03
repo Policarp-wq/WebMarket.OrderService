@@ -26,6 +26,27 @@ namespace WebMarket.OrderService.Repositories
             var pointParam = new NpgsqlParameter("pointParam", point);
             return await _dbSet.FromSql($"select * from fn_GetClosestPoint({pointParam})").FirstOrDefaultAsync();
         }
+
+        public async Task<Checkpoint> GetById(int id)
+        {
+            if (id < 0) throw new InvalidArgumentException("Checkpoint id < 0: " + id);
+            var res = await _dbSet
+                .AsNoTracking()
+                .Where(c => c.CheckpointId == id)
+                .FirstOrDefaultAsync();
+            if (res == null)
+                throw new NotFoundException("Failed to find checkpoint with id: " + id);
+            return res;
+        }
+
+        public async Task<List<Checkpoint>> GetCheckpointsIdByOwner(int ownerId)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Where(c => c.OwnerId == ownerId)
+                .ToListAsync();
+        }
+
         public async Task<List<Checkpoint>> GetUsersPoints(int userId)
         {
             if(userId < 0) throw new InvalidArgumentException("User id < 0: " + userId);

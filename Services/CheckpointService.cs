@@ -1,4 +1,5 @@
 ﻿using NetTopologySuite.Geometries;
+using StackExchange.Redis;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 
@@ -7,9 +8,11 @@ namespace WebMarket.OrderService.Services
     public class CheckpointService : BaseService, ICheckpointService
     {
         private ICheckpointRepository _checkpointRepository;
-        public CheckpointService(ICheckpointRepository repository)
+        private IDatabase _redis;
+        public CheckpointService(ICheckpointRepository repository, IConnectionMultiplexer multiplexer)
         {
             _checkpointRepository = repository;
+            _redis = multiplexer.GetDatabase();       
         }
 
         public async Task<bool> DeletePoint(int pointId)

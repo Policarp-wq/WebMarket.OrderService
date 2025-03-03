@@ -41,7 +41,7 @@ public partial class OrdersDbContext : DbContext
 
             entity.Property(e => e.CheckpointId).HasColumnName("checkpoint_id");
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
-            entity.Property(e => e.Location).HasColumnName("location").HasColumnType("geometry (point)");
+            entity.Property(e => e.Location).HasColumnName("location").HasColumnType("geometry (point)");          
         });
 
         modelBuilder.Entity<CustomerHistory>(entity =>
@@ -73,7 +73,12 @@ public partial class OrdersDbContext : DbContext
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.DeliveryPointId).HasColumnName("delivery_point_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.Status)
+            .HasColumnName("status")
+            //.HasConversion(v => v.ToString().ToLower(), v => (CustomerOrder.OrderStatus)Enum.Parse(typeof(CustomerOrder.OrderStatus), v))
+            .HasColumnType("order_status");
+
+            entity.Property(e => e.TrackNumber).HasColumnName("track_number");
 
             entity.HasOne(d => d.Checkpoint).WithMany(p => p.CustomerOrderCheckpoints)
                 .HasForeignKey(d => d.CheckpointId)

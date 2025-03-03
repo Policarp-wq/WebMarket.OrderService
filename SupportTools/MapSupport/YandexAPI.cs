@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using StackExchange.Redis;
 
 namespace WebMarket.OrderService.SupportTools.MapSupport
 {
@@ -11,16 +12,22 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
         public static string BasicPath = @"https://geocode-maps.yandex.ru/1.x";
         private readonly HttpClient _httpClient;
         private readonly ILogger<YandexAPI> _logger;
-        public YandexAPI(IHttpClientFactory httpClientFactory, ILogger<YandexAPI> logger, string apikey)
+        private IDatabase _redis;
+        public YandexAPI(IHttpClientFactory httpClientFactory, IConnectionMultiplexer multiplexer, ILogger<YandexAPI> logger, string apikey)
         {
             _apiKey = apikey;
             _httpClient = httpClientFactory.CreateClient("yandexapi");
             _httpClient.BaseAddress = new Uri($"{BasicPath}?apikey={_apiKey}&lang=ru_RU");
             _logger = logger;
+            _redis = multiplexer.GetDatabase();
         }
-
+        //benchmark!
         public async Task<string> GetAddressByLongLat(double longitude, double latitude) //долгота и широта
         {
+            string coordinatedKey = $"{longitude},{latitude}";
+            var cachedAddress = await _redis.StringGetAsync(coordinatedKey);
+            if (cachedAddress != RedisValue.Null)
+                return cachedAddress.ToString();
             var httpGetRequest = new HttpRequestMessage()
             {
                 Method = HttpMethod.Get,
@@ -39,9 +46,13 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
             if (string.IsNullOrEmpty(body))
                 throw new HttpRequestException($"Body was null for {httpGetRequest.RequestUri}");
             try
+                
             {
                 JObject jobject = (JObject)JsonConvert.DeserializeObject(body);
                 var address = jobject.SelectToken(AddressPath)!.Value<string>();
+                if (address == null)
+                    return string.Empty;
+                await _redis.StringSetAsync(coordinatedKey, address);
                 return address;
             }
             catch (ArgumentNullException ex)

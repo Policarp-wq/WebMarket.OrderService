@@ -5,8 +5,9 @@ namespace WebMarket.OrderService.Repositories
 {
     public interface IOrderRepository
     {
-        Task<int> CreateOrder(int customerID, int productID, int checkpointID);
-        Task<OrderInfo> GetOrderInfo(int trackNumber);
-        Task<bool> UpdateOrderInfo(int CheckpointId, CustomerOrder.OrderStatus status);
+        Task<OrderInfo> CreateOrder(int customerID, int productID, int deliverypointID, int supplierID, string trackNumber);
+        Task<OrderInfo> GetOrderInfo(string trackNumber);
+        Task<OrderUpdateReport> UpdateOrderInfo(UpdateOrderInfo info);
+        Task<List<CustomerOrder>> ListOrders();
     }
 }

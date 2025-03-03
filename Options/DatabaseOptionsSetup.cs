@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.SupportTools;
 
 namespace WebMarket.OrderService.Options
@@ -16,9 +17,9 @@ namespace WebMarket.OrderService.Options
         public void Configure(DatabaseOptions options)
         {
             var rawConnectionString = _configuration.GetConnectionString("Database");
-            options.ConnectionString = ConnectionString.GetReplacedEnvVariables(rawConnectionString,
-                ["DB_SERVER", "DB_NAME", "DB_USER", "DB_PASSWORD"]);
-
+            if (rawConnectionString == null)
+                throw new ConfigurationException("Database connection string was null!");
+            options.ConnectionString = ConnectionStringExtractor.GetReplacedEnvVariables(rawConnectionString);
             _configuration.GetSection(ConfigurationSectionName).Bind(options);
 
         }
