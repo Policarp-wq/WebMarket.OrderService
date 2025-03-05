@@ -27,6 +27,12 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet.FromSql($"select * from fn_GetClosestPoint({pointParam})").FirstOrDefaultAsync();
         }
 
+        public async Task<List<Checkpoint>> GetAll()
+        {
+            var res =  await _dbSet.AsNoTracking().ToListAsync();
+            return res;
+        }
+
         public async Task<Checkpoint> GetById(int id)
         {
             if (id < 0) throw new InvalidArgumentException("Checkpoint id < 0: " + id);
@@ -44,15 +50,6 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet
                 .AsNoTracking()
                 .Where(c => c.OwnerId == ownerId)
-                .ToListAsync();
-        }
-
-        public async Task<List<Checkpoint>> GetUsersPoints(int userId)
-        {
-            if(userId < 0) throw new InvalidArgumentException("User id < 0: " + userId);
-            return await _dbSet
-                .AsNoTracking()
-                .Where(c => c.OwnerId == userId)
                 .ToListAsync();
         }
 

@@ -20,12 +20,24 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
             builder.MapPatch("updateOrderStatus", UpdateOrderStatus);
             builder.MapPatch("updateOrderCheckpoint", UpdateOrderCheckpoint);
             builder.MapGet("getOrders", GetOrders);
+            builder.MapGet("getOrderStatuses", GetPossibleStatuses);
+            builder.MapGet("getOrderByTrackNumber", GetOrderByTrackNumber);
             return builder;
+        }
+
+        private static async Task <IResult> GetOrderByTrackNumber(IOrderService orderService, [FromQuery] string trackNumber)
+        {
+            return Results.Ok(await orderService.GetOrderInfo(trackNumber));
         }
 
         private static async Task<IResult> GetOrders(IOrderService orderService)
         {
             return Results.Ok(await orderService.ListOrders());
+        }
+
+        private static IResult GetPossibleStatuses()
+        {
+            return Results.Ok(Enum.GetNames(typeof(CustomerOrder.OrderStatus)));
         }
 
         public static async Task<IResult> CreateOrder(IOrderService orderService, OrderCreateInfo createInfo)

@@ -26,9 +26,14 @@ namespace WebMarket.OrderService.Services
             return await _checkpointRepository.FindClosest(point);
         }
 
-        public async Task<List<Checkpoint>> GetUsersPoints(int userId)
+        public async Task<List<Checkpoint>> GetAll()
         {
-            return await _checkpointRepository.GetUsersPoints(userId);
+            return await _checkpointRepository.GetAll();
+        }
+
+        public async Task<List<Checkpoint>> GetOwnersPoints(int ownerId)
+        {
+            return await _checkpointRepository.GetCheckpointsIdByOwner(ownerId);
         }
 
         public async Task<Checkpoint> RegisterPoint(int userId, Point point)

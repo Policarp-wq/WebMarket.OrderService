@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using NetTopologySuite.Geometries;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
 
@@ -33,20 +34,19 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
                 Method = HttpMethod.Get,
                 RequestUri = new Uri($"{BasicPath}?apikey={_apiKey}&lang=ru_RU&geocode={longitude},{latitude}&sco=longlat&format=json")
             };
-            _logger.LogInformation("Send request to yandex api {Uri}", httpGetRequest.RequestUri);
+            _logger.LogDebug("Send request to yandex api {Uri}", httpGetRequest.RequestUri);
             var response = await _httpClient.SendAsync(httpGetRequest);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Successful response");
+                _logger.LogWarning("Bad response for {Uri}", httpGetRequest.RequestUri);
                 throw new HttpRequestException($"Bad status code {response.StatusCode}");
             }
             //api key exposing
-            _logger.LogInformation("Got response for {Uri}", httpGetRequest.RequestUri);
+            _logger.LogDebug("Got response for {Uri}", httpGetRequest.RequestUri);
             var body = await response.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(body))
                 throw new HttpRequestException($"Body was null for {httpGetRequest.RequestUri}");
             try
-                
             {
                 JObject jobject = (JObject)JsonConvert.DeserializeObject(body);
                 var address = jobject.SelectToken(AddressPath)!.Value<string>();
@@ -65,6 +65,11 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
         public Task<string> GetLongLatByAddress(string address)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<string> GetAddressByLongLat(Point point)
+        {
+            return await GetAddressByLongLat(point.X, point.Y);
         }
     }
 }

@@ -12,6 +12,7 @@
         "DB_PASSWORD": "wannan0wha1j0ke1made?",
         "REDIS_SERVER": "localhost",
         "REDIS_PASSWORD": "eiQw£71:!k0M&@Ss",
+        "SEQ_URL": "http://localhost:5341",
         "ASPNETCORE_HTTP_PORTS": "5000"
       },
       "dotnetRunMessages": true,

@@ -27,22 +27,13 @@ namespace WebMarket.OrderService.Repositories
             return (OrderInfo)res.Entity;
         }
 
-        public async Task<CustomerOrder?> GetOrderInfo(int trackNumber)
-        {
-            if(trackNumber < 0) throw new InvalidArgumentException("track number < 0: " +  trackNumber);
-            var res = await _dbSet
-                .Include(o => o.Checkpoint)
-                .Include(o => o.DeliveryPoint)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.OrderId == trackNumber);
-            return res;
-   
-        }
 
         public async Task<OrderInfo> GetOrderInfo(string trackNumber)
         {
             var res = await _dbSet
                 .AsNoTracking()
+                .Include(o => o.Checkpoint)
+                .Include(o => o.DeliveryPoint)
                 .FirstOrDefaultAsync(x => x.TrackNumber.Equals(trackNumber));
             if (res == null)
                 throw new NotFoundException("Didn't find order with given tracknumber: " + trackNumber);

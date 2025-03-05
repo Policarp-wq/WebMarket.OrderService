@@ -15,10 +15,16 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
             builder.MapPost("registerCheckpoint", RegisterCheckpoint);
             builder.MapGet("getClosestPoint", FindClosest);
             builder.MapGet("getAdd", GetAddress);
+            builder.MapGet("getCheckpoints", GetAllCheckpoints);
             return builder;
         }
 
-        public static async Task<IResult> GetAddress(IMapGeocoder geocoder, [FromQuery] double longitude, [FromQuery] double latitude)
+        public static async Task<IResult> GetAllCheckpoints(ICheckpointService checkpointService)
+        {
+            return Results.Ok(await checkpointService.GetAll());
+        }
+
+        public static async Task<IResult> GetAddress(IMapGeocoder geocoder, ILogger<IMapGeocoder> logger, [FromQuery] double longitude, [FromQuery] double latitude)
         {
             try
             {
@@ -27,7 +33,7 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
             }
             catch (HttpRequestException ex)
             {
-                //log ex!
+                logger.LogWarning(ex, "exception raised during call {method}", nameof(geocoder.GetAddressByLongLat));
                 return Results.Ok($"{longitude}, {latitude}");
             }
         }

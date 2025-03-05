@@ -4,6 +4,7 @@ using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.SupportTools.Kafka;
+using WebMarket.OrderService.SupportTools.MapSupport;
 using WebMarket.OrderService.SupportTools.TrackNumber;
 
 namespace WebMarket.OrderService.Services
@@ -14,12 +15,16 @@ namespace WebMarket.OrderService.Services
         private ICheckpointRepository _checkpointRepository;
         private ITrackNumberGenerator _trackNumberGenerator;
         private IKafkaMessageProducer _producer;
-        public OrderService(IOrderRepository orderRepository,  ITrackNumberGenerator trackNumberGenerator, ICheckpointRepository checkpointRepository, IKafkaMessageProducer messageProducer)
+        private IMapGeocoder _geocoder;
+        public OrderService(IOrderRepository orderRepository,  ITrackNumberGenerator trackNumberGenerator,
+            ICheckpointRepository checkpointRepository, IKafkaMessageProducer messageProducer,
+            IMapGeocoder geocoder)
         {
             _orderRepository = orderRepository;
             _trackNumberGenerator = trackNumberGenerator;
             _checkpointRepository = checkpointRepository;
             _producer = messageProducer;
+            _geocoder = geocoder;
         }
 
         private static Checkpoint FindClosest(Checkpoint target, IEnumerable<Checkpoint> checkpoints)
@@ -61,6 +66,14 @@ namespace WebMarket.OrderService.Services
             return info;
         }
 
+        public async Task<OrderInfoForClient> GetOrderInfoForClient(string trackNumber)
+        {
+            var info = await GetOrderInfo(trackNumber);
+            string checkpointAddress = await _geocoder.GetAddressByLongLat(info.Checkpoint.Location);
+            string deliveryAddress = await _geocoder.GetAddressByLongLat(info.DeliveryPoint.Location);
+            return new OrderInfoForClient(checkpointAddress, deliveryAddress, info.TrackNumber, info.Status);
+        }
+
         public async Task<List<CustomerOrder>> ListOrders()
         {
             return await _orderRepository.ListOrders();
@@ -71,7 +84,7 @@ namespace WebMarket.OrderService.Services
             var report = await _orderRepository.UpdateOrderInfo(info);
             if (report.Changed)
             {
-                _producer.ProduceMessage("order_update", info.OrderID.ToString(), JsonConvert.SerializeObject(report.OrderInfo));
+               await _producer.ProduceMessage("order_update", info.OrderID.ToString(), JsonConvert.SerializeObject(report.OrderInfo));
             }
             return report.Changed;
         }

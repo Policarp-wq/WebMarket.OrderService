@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -18,7 +19,7 @@ namespace WebMarket.OrderService.AppExtensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection ConnectDb(this IServiceCollection services, IHealthChecksBuilder healthChecksBuilder)
+        public static IServiceCollection ConnectDb(this IServiceCollection services, IHealthChecksBuilder healthChecksBuilder, bool development)
         {
             
             services.AddDbContext<OrdersDbContext>((serviceProvider, dbContextOptBuilder) =>
@@ -31,8 +32,18 @@ namespace WebMarket.OrderService.AppExtensions
                     sqlOpt.CommandTimeout(dbOpt.CommandTimeout);
                     sqlOpt.EnableRetryOnFailure(dbOpt.CommandTimeout);
                 });
-                dbContextOptBuilder.EnableDetailedErrors(dbOpt.EnabledDetailedErrors);
-                dbContextOptBuilder.EnableSensitiveDataLogging(dbOpt.EnabledSensitiveDataLog);
+                if(development)
+                {
+                    dbContextOptBuilder.EnableDetailedErrors(dbOpt.EnabledDetailedErrors);
+                    dbContextOptBuilder.EnableSensitiveDataLogging(dbOpt.EnabledSensitiveDataLog);
+                }
+                dbContextOptBuilder.ConfigureWarnings(b =>
+                    b.Log(//remove noisy connection info???
+                        (RelationalEventId.CommandExecuted, LogLevel.Debug),
+                        (RelationalEventId.ConnectionOpened, LogLevel.Trace),
+                        (RelationalEventId.ConnectionClosed, LogLevel.Trace)
+                        )
+                );
                 dbContextOptBuilder.UseLoggerFactory(serviceProvider.GetRequiredService<ILoggerFactory>());
             });
             healthChecksBuilder.AddDbContextCheck<OrdersDbContext>();
