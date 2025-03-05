@@ -45,16 +45,16 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet.AsNoTracking().ToListAsync();
         }
 
-        public async Task<OrderUpdateReport> UpdateOrderInfo(UpdateOrderInfo info)
+        public async Task<OrderUpdateReport> UpdateOrderInfo(OrderUpdateInfo info)
         {
             var order = await _dbSet
-                .FirstOrDefaultAsync(o => o.OrderId == info.OrderID);
+                .FirstOrDefaultAsync(o => o.TrackNumber.Equals(info.TrackNumber));
             if (order == null)
-                throw new NotFoundException($"Didn't find order for update with given id: {info.OrderID}");
+                throw new NotFoundException($"Didn't find order for update with given track number: {info.TrackNumber}");
             return GetUpdatedOrder(order, info);
         }
 
-        private static OrderUpdateReport GetUpdatedOrder(CustomerOrder order, UpdateOrderInfo info)
+        private static OrderUpdateReport GetUpdatedOrder(CustomerOrder order, OrderUpdateInfo info)
         {
             bool updated = false;
             if (info.Status != null && order.Status != info.Status)
@@ -67,7 +67,7 @@ namespace WebMarket.OrderService.Repositories
                 order.CheckpointId = info.CheckpointID!.Value;
                 updated = true;
             }
-            return new OrderUpdateReport(updated, (OrderInfo)order);
+            return new OrderUpdateReport(updated, order.CustomerId, (OrderInfo)order);
 
         }
 

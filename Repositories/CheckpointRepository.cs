@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using NetTopologySuite.Geometries;
 using Npgsql;
+using WebMarket.OrderService.ApiContracts;
 using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.Models;
 
@@ -24,12 +25,17 @@ namespace WebMarket.OrderService.Repositories
         public async Task<Checkpoint?> FindClosest(Point point)
         {
             var pointParam = new NpgsqlParameter("pointParam", point);
-            return await _dbSet.FromSql($"select * from fn_GetClosestPoint({pointParam})").FirstOrDefaultAsync();
+            var res = await _dbSet.FromSql($"select * from fn_GetClosestPoint({pointParam})").FirstOrDefaultAsync();
+            if(res is null)
+                return null;
+            return res;
         }
 
         public async Task<List<Checkpoint>> GetAll()
         {
-            var res =  await _dbSet.AsNoTracking().ToListAsync();
+            var res =  await _dbSet
+                .AsNoTracking()
+                .ToListAsync();
             return res;
         }
 
@@ -50,7 +56,8 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet
                 .AsNoTracking()
                 .Where(c => c.OwnerId == ownerId)
-                .ToListAsync();
+                .ToListAsync()
+                ;
         }
 
         public async Task<Checkpoint> RegisterPoint(int userId, Point point)

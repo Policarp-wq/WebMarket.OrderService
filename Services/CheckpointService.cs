@@ -1,5 +1,6 @@
 ﻿using NetTopologySuite.Geometries;
 using StackExchange.Redis;
+using WebMarket.OrderService.ApiContracts;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 
@@ -21,22 +22,27 @@ namespace WebMarket.OrderService.Services
             return await _checkpointRepository.DeletePoint(pointId);
         }
 
-        public async Task<Checkpoint?> FindClosest(Point point)
+        public async Task<CheckpointInfo?> FindClosest(Point point)
         {
-            return await _checkpointRepository.FindClosest(point);
+            var res = await _checkpointRepository.FindClosest(point);
+            if(res is null)
+                return null;
+            return res;
         }
 
-        public async Task<List<Checkpoint>> GetAll()
+        public async Task<List<CheckpointInfo>> GetAll()
         {
-            return await _checkpointRepository.GetAll();
+            var l = await _checkpointRepository.GetAll();
+            return l.Select(c => (CheckpointInfo)c).ToList();
         }
 
-        public async Task<List<Checkpoint>> GetOwnersPoints(int ownerId)
+        public async Task<List<CheckpointInfo>> GetOwnersPoints(int ownerId)
         {
-            return await _checkpointRepository.GetCheckpointsIdByOwner(ownerId);
+            var l = await _checkpointRepository.GetCheckpointsIdByOwner(ownerId);
+            return l.Select(c => (CheckpointInfo)c).ToList();
         }
 
-        public async Task<Checkpoint> RegisterPoint(int userId, Point point)
+        public async Task<CheckpointInfo> RegisterPoint(int userId, Point point)
         {
             return await _checkpointRepository.RegisterPoint(userId, point);
         }

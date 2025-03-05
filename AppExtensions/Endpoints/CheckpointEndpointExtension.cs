@@ -1,4 +1,6 @@
 ﻿
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.Geometries;
 using WebMarket.OrderService.ApiContracts;
@@ -19,52 +21,52 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
             return builder;
         }
 
-        public static async Task<IResult> GetAllCheckpoints(ICheckpointService checkpointService)
+        public static async Task<Ok<List<CheckpointInfo>>> GetAllCheckpoints(ICheckpointService checkpointService)
         {
-            return Results.Ok(await checkpointService.GetAll());
+            return TypedResults.Ok(await checkpointService.GetAll());
         }
 
-        public static async Task<IResult> GetAddress(IMapGeocoder geocoder, ILogger<IMapGeocoder> logger, [FromQuery] double longitude, [FromQuery] double latitude)
+        public static async Task<Results<Ok<string>, BadRequest<string>>> GetAddress(IMapGeocoder geocoder, ILogger<IMapGeocoder> logger, [FromQuery] double longitude, [FromQuery] double latitude)
         {
             try
             {
                 string res = await geocoder.GetAddressByLongLat(longitude, latitude);
-                return Results.Ok(res);
+                return TypedResults.Ok(res);
             }
             catch (HttpRequestException ex)
             {
                 logger.LogWarning(ex, "exception raised during call {method}", nameof(geocoder.GetAddressByLongLat));
-                return Results.Ok($"{longitude}, {latitude}");
+                return TypedResults.BadRequest($"Failed to get address from {longitude}, {latitude}");
             }
         }
 
-        private static async Task<IResult> RegisterCheckpoint(
+        private static async Task<Created<CheckpointInfo>> RegisterCheckpoint(
             ICheckpointService checkpointService,
             [FromQuery] int userId, [FromBody] LocationPresentation checkPointLocation
             )
         {
             var res = await checkpointService.RegisterPoint(userId, (Point)checkPointLocation);
-            return Results.Created(nameof(RegisterCheckpoint), (LocationPresentation)res.Location);
+            return TypedResults.Created(nameof(RegisterCheckpoint), res);
         }
 
-        private static async Task<IResult> FindClosest(
+        private static async Task<Results<Ok<LocationPresentation>, NotFound<LocationPresentation>>> FindClosest(
             ICheckpointService checkpointService, [FromQuery] double x, [FromQuery] double y)
         {
             LocationPresentation checkPointLocation = new LocationPresentation(x, y);
             var checkpoint = await checkpointService.FindClosest((Point)checkPointLocation);
             if (checkpoint == null)
-                return Results.NotFound(checkPointLocation);
-            return Results.Ok((LocationPresentation)checkpoint.Location);
+                return TypedResults.NotFound(checkPointLocation);
+            return TypedResults.Ok((LocationPresentation)checkpoint.Point);
         }
         //AUTH!
-        private static async Task<IResult> Delete(
+        private static async Task<Results<Ok, NotFound>> Delete(
             ICheckpointService checkpointService,
             [FromQuery] int pointId)
         {
             var res = await checkpointService.DeletePoint(pointId);
             if (res)
-                return Results.Ok();
-            else return Results.NotFound();
+                return TypedResults.Ok();
+            else return TypedResults.NotFound();
         }
     }
 }

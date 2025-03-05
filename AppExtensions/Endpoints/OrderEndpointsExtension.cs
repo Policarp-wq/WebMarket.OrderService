@@ -47,20 +47,20 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
 
         }
 
-        public static async Task<IResult> UpdateOrder(IOrderService orderService, UpdateOrderInfo orderInfo)
+        public static async Task<IResult> UpdateOrder(IOrderService orderService, OrderUpdateInfo orderInfo)
         {
             var updated = await orderService.UpdateOrder(orderInfo);
             return Results.Ok(updated);
         }
 
-        public static async Task<IResult> UpdateOrderStatus(IOrderService orderService, [FromQuery] int orderId, CustomerOrder.OrderStatus orderStatus)
+        public static async Task<IResult> UpdateOrderStatus(IOrderService orderService, [FromQuery] string trackNumber, CustomerOrder.OrderStatus orderStatus)
         {
-            return await UpdateOrder(orderService, new UpdateOrderInfo(orderId, null, orderStatus));
+            return await UpdateOrder(orderService, new OrderUpdateInfo(trackNumber, null, orderStatus));
         }
 
-        public static async Task<IResult> UpdateOrderCheckpoint(IOrderService orderService, [FromQuery] int orderId, int checkpointId)
+        public static async Task<IResult> UpdateOrderCheckpoint(IOrderService orderService, [FromQuery] string trackNumber, int checkpointId)
         {
-            return await UpdateOrder(orderService, new UpdateOrderInfo(orderId, checkpointId, null));
+            return await UpdateOrder(orderService, new OrderUpdateInfo(trackNumber, checkpointId, null));
         }
     }
 }

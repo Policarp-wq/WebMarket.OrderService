@@ -79,12 +79,12 @@ namespace WebMarket.OrderService.Services
             return await _orderRepository.ListOrders();
         }
 
-        public async Task<bool> UpdateOrder(UpdateOrderInfo info)
+        public async Task<bool> UpdateOrder(OrderUpdateInfo info)
         {
             var report = await _orderRepository.UpdateOrderInfo(info);
             if (report.Changed)
             {
-               await _producer.ProduceMessage("order_update", info.OrderID.ToString(), JsonConvert.SerializeObject(report.OrderInfo));
+               await _producer.ProduceMessage("order_update", info.TrackNumber.ToString(), JsonConvert.SerializeObject(report.OrderInfo));
             }
             return report.Changed;
         }

@@ -1,14 +1,15 @@
 ﻿using NetTopologySuite.Geometries;
+using WebMarket.OrderService.ApiContracts;
 using WebMarket.OrderService.Models;
 
 namespace WebMarket.OrderService.Services
 {
     public interface ICheckpointService
     {
-        Task<Checkpoint?> FindClosest(Point point);
-        Task<List<Checkpoint>> GetOwnersPoints(int ownerId);
-        Task<Checkpoint> RegisterPoint(int userId, Point point);
+        Task<CheckpointInfo?> FindClosest(Point point);
+        Task<List<CheckpointInfo>> GetOwnersPoints(int ownerId);
+        Task<CheckpointInfo> RegisterPoint(int userId, Point point);
         Task<bool> DeletePoint(int pointId);
-        Task<List<Checkpoint>> GetAll();
+        Task<List<CheckpointInfo>> GetAll();
     }
 }

@@ -8,7 +8,7 @@ namespace WebMarket.OrderService.Services
         Task<string> CreateOrder(int customerID, int productID, int deliverypointID, int supplierId);
         Task<OrderInfoForClient> GetOrderInfoForClient(string trackNumber);
         Task<OrderInfo> GetOrderInfo(string trackNumber);
-        Task<bool> UpdateOrder(UpdateOrderInfo info);
+        Task<bool> UpdateOrder(OrderUpdateInfo info);
         Task<List<CustomerOrder>> ListOrders();
     }
 }

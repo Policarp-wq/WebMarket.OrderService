@@ -1,4 +1,5 @@
 ﻿using NetTopologySuite.Geometries;
+using WebMarket.OrderService.ApiContracts;
 using WebMarket.OrderService.Models;
 
 namespace WebMarket.OrderService.Repositories

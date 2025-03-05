@@ -7,7 +7,7 @@ namespace WebMarket.OrderService.Repositories
     {
         Task<OrderInfo> CreateOrder(int customerID, int productID, int deliverypointID, int supplierID, string trackNumber);
         Task<OrderInfo> GetOrderInfo(string trackNumber);
-        Task<OrderUpdateReport> UpdateOrderInfo(UpdateOrderInfo info);
+        Task<OrderUpdateReport> UpdateOrderInfo(OrderUpdateInfo info);
         Task<List<CustomerOrder>> ListOrders();
     }
 }
