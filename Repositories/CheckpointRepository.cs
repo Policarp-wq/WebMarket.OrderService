@@ -15,7 +15,7 @@ namespace WebMarket.OrderService.Repositories
         }
         public async Task<bool> DeletePoint(int pointId)
         {
-            if (pointId < 0) throw new InvalidArgumentException("Checkpoint id < 0: " + pointId);
+            if (!IsIdValid(pointId)) return false;
             var res = await _dbSet
                 .Where(c => c.CheckpointId == pointId)
                 .ExecuteDeleteAsync();
@@ -26,8 +26,6 @@ namespace WebMarket.OrderService.Repositories
         {
             var pointParam = new NpgsqlParameter("pointParam", point);
             var res = await _dbSet.FromSql($"select * from fn_GetClosestPoint({pointParam})").FirstOrDefaultAsync();
-            if(res is null)
-                return null;
             return res;
         }
 
@@ -39,15 +37,13 @@ namespace WebMarket.OrderService.Repositories
             return res;
         }
 
-        public async Task<Checkpoint> GetById(int id)
+        public async Task<Checkpoint?> GetById(int id)
         {
             if (id < 0) throw new InvalidArgumentException("Checkpoint id < 0: " + id);
             var res = await _dbSet
                 .AsNoTracking()
                 .Where(c => c.CheckpointId == id)
                 .FirstOrDefaultAsync();
-            if (res == null)
-                throw new NotFoundException("Failed to find checkpoint with id: " + id);
             return res;
         }
 
@@ -56,13 +52,19 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet
                 .AsNoTracking()
                 .Where(c => c.OwnerId == ownerId)
-                .ToListAsync()
-                ;
+                .ToListAsync();
+        }
+
+        public async Task<List<Checkpoint>> GetDeliveryPoints()
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Where(c => c.IsDelivryPoint).ToListAsync();
         }
 
         public async Task<Checkpoint> RegisterPoint(int userId, Point point)
         {
-            if (userId < 0) throw new InvalidArgumentException("User id < 0: " + userId);
+            if (userId < 0) throw new InvalidArgumentException($"User id must be > 0!: {userId}");
             var res = await _dbSet.AddAsync(new Checkpoint()
             {
                 OwnerId = userId,

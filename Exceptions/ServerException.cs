@@ -2,6 +2,6 @@
 {
     public class ServerException : Exception
     {
-        public ServerException(string msg) : base(msg) { }
+        public ServerException(string msg, Exception? inner = null) : base(msg, inner) { }
     }
 }

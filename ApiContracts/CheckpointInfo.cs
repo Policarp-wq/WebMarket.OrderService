@@ -7,17 +7,19 @@ namespace WebMarket.OrderService.ApiContracts
 {
     public record CheckpointInfo
     {
+        public int CheckpointId { get; set; }
         [JsonConverter(typeof(PointJsonConverter))]
-        public Point Point { get; set; }
+        public Point Location { get; set; }
         public int OwnerId { get; set; }
-        public CheckpointInfo(Point Point, int OwnerId)
+        public CheckpointInfo(int CheckpointId, Point Point, int OwnerId)
         {
-            this.Point = Point;
+            this.CheckpointId = CheckpointId;
+            this.Location = Point;
             this.OwnerId = OwnerId;
         }
         public static implicit operator CheckpointInfo(Checkpoint checkpoint)
         {
-            return new CheckpointInfo(checkpoint.Location, checkpoint.OwnerId);
+            return new CheckpointInfo(checkpoint.CheckpointId, checkpoint.Location, checkpoint.OwnerId);
         }
     }
 }

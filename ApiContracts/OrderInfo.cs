@@ -2,11 +2,11 @@
 
 namespace WebMarket.OrderService.ApiContracts
 {
-    public record OrderInfo(Checkpoint Checkpoint, Checkpoint DeliveryPoint, CustomerOrder.OrderStatus Status, string TrackNumber)
+    public record OrderInfo(int UserId, CheckpointInfo Checkpoint, CheckpointInfo DeliveryPoint, CustomerOrder.OrderStatus Status, string TrackNumber)
     {
-        public static explicit operator OrderInfo(CustomerOrder order)
+        public static implicit operator OrderInfo(CustomerOrder order)
         {
-            return new OrderInfo(order.Checkpoint, order.DeliveryPoint, order.Status, order.TrackNumber);
+            return new OrderInfo(order.CustomerId, order.Checkpoint, order.DeliveryPoint, order.Status, order.TrackNumber);
         }
     }
 }

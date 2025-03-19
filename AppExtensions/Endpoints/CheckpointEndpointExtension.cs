@@ -15,15 +15,27 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
         public static IEndpointRouteBuilder AddCheckpoints(this IEndpointRouteBuilder builder)
         {
             builder.MapPost("registerCheckpoint", RegisterCheckpoint);
-            builder.MapGet("getClosestPoint", FindClosest);
-            builder.MapGet("getAdd", GetAddress);
+            builder.MapGet("findClosestPoint", FindClosest);
+            builder.MapGet("getAddressFromLongLat", GetAddress);
             builder.MapGet("getCheckpoints", GetAllCheckpoints);
+            builder.MapGet("getOwnersPoints", GetOwnersCheckpoints);
+            builder.MapGet("getDeliveryPoints", GetDeliveryCheckpoints);
             return builder;
+        }
+
+        public static async Task<Ok<List<CheckpointInfo>>> GetDeliveryCheckpoints(ICheckpointService checkpointService)
+        {
+            return TypedResults.Ok(await checkpointService.GetDeliveryCheckpoints());
         }
 
         public static async Task<Ok<List<CheckpointInfo>>> GetAllCheckpoints(ICheckpointService checkpointService)
         {
             return TypedResults.Ok(await checkpointService.GetAll());
+        }
+
+        public static async Task<Ok<List<CheckpointInfo>>> GetOwnersCheckpoints(ICheckpointService service, [FromQuery] int ownerId)
+        {
+            return TypedResults.Ok(await service.GetOwnersPoints(ownerId));
         }
 
         public static async Task<Results<Ok<string>, BadRequest<string>>> GetAddress(IMapGeocoder geocoder, ILogger<IMapGeocoder> logger, [FromQuery] double longitude, [FromQuery] double latitude)
@@ -56,7 +68,7 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
             var checkpoint = await checkpointService.FindClosest((Point)checkPointLocation);
             if (checkpoint == null)
                 return TypedResults.NotFound(checkPointLocation);
-            return TypedResults.Ok((LocationPresentation)checkpoint.Point);
+            return TypedResults.Ok((LocationPresentation)checkpoint.Location);
         }
         //AUTH!
         private static async Task<Results<Ok, NotFound>> Delete(

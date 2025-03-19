@@ -11,33 +11,48 @@ namespace WebMarket.OrderService.Repositories
         {
         }
 
-        public async Task<OrderInfo> CreateOrder(int customerID, int productId, int deliveryPointID, int supplierID, string trackNumber)
+        public async Task<CustomerOrder> CreateOrder(int customerID, int productId, int deliveryPointID, int supplyCheckpointId, string trackNumber)
         {
             var res = await _dbSet.AddAsync(new CustomerOrder()
             {
                 CustomerId = customerID,
                 ProductId = productId,
-                CheckpointId = supplierID,
+                CheckpointId = supplyCheckpointId,
                 DeliveryPointId = deliveryPointID,
                 TrackNumber = trackNumber,
                 Status = CustomerOrder.OrderStatus.Processing,
             });
             //вставляет status хотя не должен 
             await _context.SaveChangesAsync();
-            return (OrderInfo)res.Entity;
+            var created = await _dbSet.AsNoTracking()
+                .Include(o => o.Checkpoint)
+                .Include(o => o.DeliveryPoint)
+                .SingleAsync(x => x.OrderId == res.Entity.OrderId);
+
+            return created;
         }
 
 
-        public async Task<OrderInfo> GetOrderInfo(string trackNumber)
+        public async Task<CustomerOrder?> GetOrderInfo(string trackNumber)
         {
             var res = await _dbSet
                 .AsNoTracking()
                 .Include(o => o.Checkpoint)
                 .Include(o => o.DeliveryPoint)
                 .FirstOrDefaultAsync(x => x.TrackNumber.Equals(trackNumber));
-            if (res == null)
-                throw new NotFoundException("Didn't find order with given tracknumber: " + trackNumber);
-            return (OrderInfo)res;
+            return res;
+        }
+
+        public async Task<CustomerOrder?> GetOrderInfo(int orderId)
+        {
+            if (!IsIdValid(orderId))
+                return null;
+            var res = await _dbSet
+                .AsNoTracking()
+                .Include(o => o.Checkpoint)
+                .Include(o => o.DeliveryPoint)
+                .FirstOrDefaultAsync(x => x.OrderId == orderId);
+            return res;
         }
 
         public async Task<List<CustomerOrder>> ListOrders()
@@ -45,31 +60,70 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet.AsNoTracking().ToListAsync();
         }
 
-        public async Task<OrderUpdateReport> UpdateOrderInfo(OrderUpdateInfo info)
+        public async Task<OrderUpdateReport?> UpdateOrderInfo(OrderUpdateInfo info)
         {
             var order = await _dbSet
+                .Include(o => o.Checkpoint)
+                .Include(o => o.DeliveryPoint)
                 .FirstOrDefaultAsync(o => o.TrackNumber.Equals(info.TrackNumber));
-            if (order == null)
-                throw new NotFoundException($"Didn't find order for update with given track number: {info.TrackNumber}");
-            return GetUpdatedOrder(order, info);
+            return await UpdateOrder(order, info);
         }
 
-        private static OrderUpdateReport GetUpdatedOrder(CustomerOrder order, OrderUpdateInfo info)
+        private async Task<OrderUpdateReport?> UpdateOrder(CustomerOrder? order, OrderUpdateInfo info)
         {
+            if (order == null)
+                return null;
             bool updated = false;
-            if (info.Status != null && order.Status != info.Status)
+            var stategy = _context.Database.CreateExecutionStrategy();
+            return await stategy.ExecuteAsync(async () =>
             {
-                order.Status = info.Status!.Value;
-                updated = true;
-            }
-            if (info.CheckpointID != null && info.CheckpointID != order.CheckpointId)
-            {
-                order.CheckpointId = info.CheckpointID!.Value;
-                updated = true;
-            }
-            return new OrderUpdateReport(updated, order.CustomerId, (OrderInfo)order);
-
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                if (info.Status != null && order.Status != info.Status)
+                {
+                    order.Status = info.Status!.Value;
+                    updated = true;
+                }
+                if (info.CheckpointID != null && info.CheckpointID != order.CheckpointId)
+                {
+                    order.CheckpointId = info.CheckpointID!.Value;
+                    order.Checkpoint = await _context.Checkpoints.FindAsync(order.CheckpointId)
+                        ?? throw new PrivateServerException($"Checkpoint not found for {order.CheckpointId}");
+                    if(order.CheckpointId == order.DeliveryPointId)
+                        order.Status = CustomerOrder.OrderStatus.Delivered;
+                    updated = true;
+                }
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    throw new PrivateServerException("Aborted saving order with given data", ex);
+                }
+                var report = new OrderUpdateReport(updated, order.CustomerId, (OrderInfo)order);
+                await transaction.CommitAsync();
+                return report;
+            });
+            
         }
 
+        public async Task<CustomerOrder?> GetById(int id)
+        {
+            if (!IsIdValid(id))
+                return null;
+            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(c => c.OrderId == id);
+        }
+
+        public async Task<List<CustomerOrder>> GetUserOrders(int userId)
+        {
+            if (!IsIdValid(userId))
+                return [];
+            return await _dbSet
+                .AsNoTracking()
+                .Include(x => x.Checkpoint)
+                .Include(x => x.DeliveryPoint)
+                .Where(c => c.CustomerId == userId)
+                .ToListAsync();  
+        }
     }
 }

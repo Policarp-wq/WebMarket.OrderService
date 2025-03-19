@@ -22,7 +22,7 @@ namespace WebMarket.OrderService.SupportTools
             string str = reader.GetString()!;
             var simple = JsonSerializer.Deserialize<SimplePoint>(str);
             if (simple is null)
-                throw new JsonException($"Failed to convert ${str} to Point");
+                throw new JsonException($"Failed to convert ${str} to Location");
             return new Point(simple.X, simple.Y);
         }
 

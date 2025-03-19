@@ -18,7 +18,6 @@ namespace WebMarket.OrderService.Services
 
         public async Task<bool> DeletePoint(int pointId)
         {
-            if (pointId < 0) throw new ArgumentOutOfRangeException();
             return await _checkpointRepository.DeletePoint(pointId);
         }
 
@@ -34,6 +33,13 @@ namespace WebMarket.OrderService.Services
         {
             var l = await _checkpointRepository.GetAll();
             return l.Select(c => (CheckpointInfo)c).ToList();
+        }
+
+        public async Task<List<CheckpointInfo>> GetDeliveryCheckpoints()
+        {
+            return (await _checkpointRepository.GetDeliveryPoints())
+                .Select(c => (CheckpointInfo)c)
+                .ToList();
         }
 
         public async Task<List<CheckpointInfo>> GetOwnersPoints(int ownerId)

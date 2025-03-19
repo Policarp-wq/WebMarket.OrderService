@@ -2,7 +2,7 @@
 {
     public class NotFoundException : ServerException
     {
-        public NotFoundException(string message) : base(message)
+        public NotFoundException(string msg, Exception? inner = null) : base(msg, inner)
         {
         }
     }

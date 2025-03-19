@@ -5,9 +5,12 @@ namespace WebMarket.OrderService.Repositories
 {
     public interface IOrderRepository
     {
-        Task<OrderInfo> CreateOrder(int customerID, int productID, int deliverypointID, int supplierID, string trackNumber);
-        Task<OrderInfo> GetOrderInfo(string trackNumber);
-        Task<OrderUpdateReport> UpdateOrderInfo(OrderUpdateInfo info);
+        Task<CustomerOrder> CreateOrder(int customerID, int productID, int deliverypointID, int supplierID, string trackNumber);
+        Task<CustomerOrder?> GetOrderInfo(string trackNumber);
+        Task<CustomerOrder?> GetOrderInfo(int orderId);
+        Task<OrderUpdateReport?> UpdateOrderInfo(OrderUpdateInfo info);
+        Task<List<CustomerOrder>> GetUserOrders(int userid);
         Task<List<CustomerOrder>> ListOrders();
+        Task<CustomerOrder?> GetById(int id);
     }
 }

@@ -13,5 +13,7 @@ namespace WebMarket.OrderService.Repositories
             _context = context;
             _dbSet = dbSetFactory(context);
         }
+
+        protected static bool IsIdValid(int id) => id > 0;
     }
 }

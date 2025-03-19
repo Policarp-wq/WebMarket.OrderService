@@ -2,7 +2,7 @@
 {
     public class InvalidArgumentException : ServerException
     {
-        public InvalidArgumentException(string msg) : base(msg)
+        public InvalidArgumentException(string msg, Exception? inner = null) : base(msg, inner)
         {
         }
     }

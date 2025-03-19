@@ -11,7 +11,8 @@ namespace WebMarket.OrderService.Repositories
         Task<bool> DeletePoint(int pointId);
 
         Task<List<Checkpoint>> GetCheckpointsIdByOwner(int ownerId);
-        Task<Checkpoint> GetById(int id);
+        Task<List<Checkpoint>> GetDeliveryPoints();
+        Task<Checkpoint?> GetById(int id);
         Task<List<Checkpoint>> GetAll();
         
     }

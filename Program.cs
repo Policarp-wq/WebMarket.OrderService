@@ -1,7 +1,5 @@
-using GeoJSON.Net.Converters;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
-using Serilog.Events;
 using System.Text.Json.Serialization;
 using WebMarket.OrderService.AppExtensions;
 using WebMarket.OrderService.Exceptions;
@@ -19,6 +17,8 @@ builder.Services.RegisterKafkaProducer(builder.Configuration.GetSection("Kafka")
 builder.Services.AddControllers().AddJsonOptions(opt =>
 {
     opt.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    //не конвертирует
+    opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
 });
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
