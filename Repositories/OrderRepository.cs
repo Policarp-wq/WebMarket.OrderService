@@ -66,13 +66,14 @@ namespace WebMarket.OrderService.Repositories
                 .Include(o => o.Checkpoint)
                 .Include(o => o.DeliveryPoint)
                 .FirstOrDefaultAsync(o => o.TrackNumber.Equals(info.TrackNumber));
-            return await UpdateOrder(order, info);
-        }
-
-        private async Task<OrderUpdateReport?> UpdateOrder(CustomerOrder? order, OrderUpdateInfo info)
-        {
             if (order == null)
-                return null;
+                throw new NotFoundException($"Failed to find order with track number: {info.TrackNumber}");
+            return await UpdateOrderInfo(order, info);
+        }
+        public async Task<OrderUpdateReport> UpdateOrderInfo(CustomerOrder order, OrderUpdateInfo info)
+        {
+            if (order.TrackNumber != info.TrackNumber)
+                throw new InvalidArgumentException($"TrackNumber from order {order.TrackNumber} is different from given info {info.TrackNumber}");
             bool updated = false;
             var stategy = _context.Database.CreateExecutionStrategy();
             return await stategy.ExecuteAsync(async () =>
@@ -87,7 +88,7 @@ namespace WebMarket.OrderService.Repositories
                 {
                     order.CheckpointId = info.CheckpointID!.Value;
                     order.Checkpoint = await _context.Checkpoints.FindAsync(order.CheckpointId)
-                        ?? throw new PrivateServerException($"Checkpoint not found for {order.CheckpointId}");
+                        ?? throw new NotFoundException($"Checkpoint not found for  id: {order.CheckpointId}");
                     if(order.CheckpointId == order.DeliveryPointId)
                         order.Status = CustomerOrder.OrderStatus.Delivered;
                     updated = true;
@@ -105,13 +106,6 @@ namespace WebMarket.OrderService.Repositories
                 return report;
             });
             
-        }
-
-        public async Task<CustomerOrder?> GetById(int id)
-        {
-            if (!IsIdValid(id))
-                return null;
-            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(c => c.OrderId == id);
         }
 
         public async Task<List<CustomerOrder>> GetUserOrders(int userId)

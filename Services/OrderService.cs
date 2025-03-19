@@ -38,85 +38,95 @@ namespace WebMarket.OrderService.Services
             _logger = logger;
         }
 
-        private static Checkpoint FindClosest(Checkpoint target, IEnumerable<Checkpoint> checkpoints)
+        private async Task<bool> SetIdForTrackNumber(string trackNumber, int id)
         {
-            var result = checkpoints.First();
-            double minDist = target.Location.Distance(result.Location);
-            foreach (var checkpoint in checkpoints)
+            _logger.LogDebug("Redis: setting track number for id {Id}", id);
+            return await _redis.StringSetAsync(trackNumber, id);
+        }
+
+        private async Task<int?> GetIdFromRedis(string trackNumber)
+        {
+            _logger.LogDebug("Redis: Requesting track number");
+            var redisVal = await _redis.StringGetAsync(trackNumber);
+            if (redisVal.HasValue && redisVal.IsInteger)
             {
-                var dist = checkpoint.Location.Distance(result.Location);
-                if (dist < minDist)
+                redisVal.TryParse(out int id);
+                return id;
+            }
+            return null;
+        }
+
+        public async Task<CustomerOrder> GetOrderFullInfo(string trackNumber)
+        {
+            int? id = await GetIdFromRedis(trackNumber);
+            CustomerOrder? order;
+            if (id.HasValue)
+                order = await _orderRepository.GetOrderInfo(id.Value);
+            else
+            {
+                order = await _orderRepository.GetOrderInfo(trackNumber);
+                if (order != null)
                 {
-                    result = checkpoint;
-                    minDist = dist;
+                    await SetIdForTrackNumber(trackNumber, order.OrderId);
                 }
             }
-            return result;
+            if (order == null)
+                throw new NotFoundException($"Failed to find order with track number: {trackNumber}");
+            return order;
         }
 
         private async Task SendOrderUpdatedEvent(OrderTrackingInfo info)
         {
-            _logger.LogDebug("Sending event to topic {Topic}", OrderUpdatedTopic);
             await _producer.ProduceMessage(OrderUpdatedTopic, info.UserId.ToString(), JsonConvert.SerializeObject(info));
-            _logger.LogDebug("Event sent");
         } 
 
-
-        public async Task<string> CreateOrder(int customerID, int productID, int deliverypointID, int productOwnerId)
+        private async Task<Checkpoint?> GetClosest(int deliverypointID, int productOwnerId)
         {
             var deliveryCheckpoint = await _checkpointRepository.GetById(deliverypointID);
             if (deliveryCheckpoint == null)
                 throw new InvalidArgumentException($"Checkpoint with id {deliverypointID} not found");
             var suppliersCheckpoints = await _checkpointRepository.GetCheckpointsIdByOwner(productOwnerId);
-            if (suppliersCheckpoints.Count == 0) // says it's more efficient
+            if (suppliersCheckpoints.Count == 0) // copilot says it's more efficient than Any()
                 throw new NotFoundException("No checkpoints for given supplier " + productOwnerId);
-            var closestSupplier = FindClosest(deliveryCheckpoint, suppliersCheckpoints);
+            return deliveryCheckpoint.FindClosest(suppliersCheckpoints);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="customerID"></param>
+        /// <param name="productID"></param>
+        /// <param name="deliverypointID"></param>
+        /// <param name="productOwnerId"></param>
+        /// <returns>Track number of the created order</returns>
+        /// <exception cref="NotFoundException"></exception>
+        /// <exception cref="PrivateServerException"></exception>
+
+        public async Task<string> CreateOrder(int customerID, int productID, int deliverypointID, int productOwnerId)
+        {
+            var closestSupplier = await GetClosest(deliverypointID, productOwnerId);
+            if(closestSupplier == null)
+                throw new NotFoundException($"Failed to find closest checkpoints. Delivery: {deliverypointID} Supplier: {productOwnerId}");
 
             var trackNum = _trackNumberGenerator.GenerateTrackNumber();
             var createdOrder = await _orderRepository.CreateOrder(customerID, productID, deliverypointID, closestSupplier.CheckpointId, trackNum);
             if (createdOrder == null)
                 throw new PrivateServerException($"Created null order ?? cust: {customerID}, prod: {productID}, deliv: {deliverypointID}, track: {trackNum}");
-            _redis.StringSet(createdOrder.TrackNumber, createdOrder.OrderId);
-            SendOrderUpdatedEvent(await CreateTrackingInfo(createdOrder));
+
+            await SetIdForTrackNumber(trackNum, createdOrder.OrderId);
+            await SendOrderUpdatedEvent(await CreateTrackingInfo(createdOrder));
             return createdOrder.TrackNumber;
         }
 
 
         public async Task<OrderInfo> GetOrderInfo(string trackNumber)
         {
-            var info = await _orderRepository.GetOrderInfo(trackNumber);
-            if (info == null)
-                throw new NotFoundException($"Failed to find order with track number: {trackNumber}");
-            return (OrderInfo)info;
-        }
-
-        public async Task<OrderInfoForClient> GetOrderInfoForClient(string trackNumber)
-        {
-            var info = await GetOrderInfo(trackNumber);
-            string checkpointAddress = await _geocoder.GetAddressByLongLat(info.Checkpoint.Location);
-            string deliveryAddress = await _geocoder.GetAddressByLongLat(info.DeliveryPoint.Location);
-            return new OrderInfoForClient(checkpointAddress, deliveryAddress, info.TrackNumber, info.Status);
+            return await GetOrderFullInfo(trackNumber);
         }
 
         public async Task<OrderTrackingInfo> GetTrackingInfo(string trackNumber)
         {
-            var redisVal = _redis.StringGet(trackNumber);
-            CustomerOrder? order;
-            if (redisVal.HasValue && redisVal.IsInteger)
-            {
-                redisVal.TryParse(out int id);
-                order = await _orderRepository.GetOrderInfo(id);
-            }
-            else
-            {
-                order = await _orderRepository.GetOrderInfo(trackNumber);
-                if(order != null)
-                    _redis.StringSet(order.TrackNumber, order.OrderId);
-            }   
-            if(order == null)
-                throw new NotFoundException($"Failed to find order with track number: {trackNumber}");
-            
-            return await CreateTrackingInfo((OrderInfo)order);
+            var order = await GetOrderFullInfo(trackNumber);
+            return await CreateTrackingInfo(order);
         }
 
         private async Task<OrderTrackingInfo> CreateTrackingInfo(OrderInfo order)
@@ -130,7 +140,7 @@ namespace WebMarket.OrderService.Services
         public async Task<List<OrderTrackingInfo>> GetUsersOrders(int userId)
         {
             var orders = await _orderRepository.GetUserOrders(userId);
-            var tasks = orders.Select(o => CreateTrackingInfo((OrderInfo)o));
+            var tasks = orders.Select(o => CreateTrackingInfo(o));
             return [.. (await Task.WhenAll(tasks))];
         }
 
@@ -141,9 +151,8 @@ namespace WebMarket.OrderService.Services
 
         public async Task<bool> UpdateOrder(OrderUpdateInfo info)
         {
-            var report = await _orderRepository.UpdateOrderInfo(info);
-            if (report == null)
-                throw new NotFoundException($"Failed to find oder with track number: {info.TrackNumber}");
+            var order = await GetOrderFullInfo(info.TrackNumber);
+            var report = await _orderRepository.UpdateOrderInfo(order,info);
             if (report.Changed)
             {
                OrderTrackingInfo trackingInfo = await CreateTrackingInfo(report.OrderInfo);
@@ -151,5 +160,6 @@ namespace WebMarket.OrderService.Services
             }
             return report.Changed;
         }
+
     }
 }

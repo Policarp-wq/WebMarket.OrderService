@@ -21,4 +21,33 @@ public partial class Checkpoint
     public virtual ICollection<CustomerOrder> CustomerOrderCheckpoints { get; set; } = new List<CustomerOrder>();
 
     public virtual ICollection<CustomerOrder> CustomerOrderDeliveryPoints { get; set; } = new List<CustomerOrder>();
+    /// <summary>
+    ///  
+    /// </summary>
+    /// <param name="checkpoints"></param>
+    /// <param name="excludeSelf"></param>
+    /// <returns> Return closest checkpoint from given,
+    /// if given enum is empty or enum contains only current checkpoint
+    /// and excludeSelf is true, then returns null</returns>
+    public Checkpoint? FindClosest(IEnumerable<Checkpoint> checkpoints, bool excludeSelf = false)
+    {
+        if(!checkpoints.Any()) 
+            return null;
+        var result = checkpoints.First();
+        double minDist = Location.Distance(result.Location);
+        foreach (var checkpoint in checkpoints)
+        {
+            var dist = checkpoint.Location.Distance(result.Location);
+            if (dist < minDist)
+            {
+                if(excludeSelf && checkpoint.CheckpointId == CheckpointId)
+                    continue;
+                result = checkpoint;
+                minDist = dist;
+            }
+        }
+        if (minDist == 0 && excludeSelf)
+            return null;
+        return result;
+    }
 }
