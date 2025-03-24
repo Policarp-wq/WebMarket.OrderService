@@ -40,7 +40,7 @@ public partial class OrdersDbContext : DbContext
             entity.HasIndex(e => e.OwnerId, "checkpoint_owner_id_key").IsUnique();
 
             entity.Property(e => e.CheckpointId).HasColumnName("checkpoint_id");
-            entity.Property(e => e.IsDelivryPoint).HasColumnName("is_delivery_point");
+            entity.Property(e => e.IsDeliveryPoint).HasColumnName("is_delivery_point");
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
             entity.Property(e => e.Location).HasColumnName("location").HasColumnType("geometry (point)");          
         });

@@ -54,10 +54,10 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
 
         private static async Task<Created<CheckpointInfo>> RegisterCheckpoint(
             ICheckpointService checkpointService,
-            [FromQuery] int userId, [FromBody] LocationPresentation checkPointLocation
+            [FromQuery] int userId, [FromQuery] bool isDelivery, [FromBody] LocationPresentation checkPointLocation
             )
         {
-            var res = await checkpointService.RegisterPoint(userId, (Point)checkPointLocation);
+            var res = await checkpointService.RegisterPoint(userId, (Point)checkPointLocation, isDelivery);
             return TypedResults.Created(nameof(RegisterCheckpoint), res);
         }
 

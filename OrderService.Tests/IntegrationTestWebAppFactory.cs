@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
+using Respawn;
+using System.Data.Common;
 using Testcontainers.PostgreSql;
 using WebMarket.OrderService.Models;
 
@@ -17,6 +20,8 @@ namespace OrderService.Tests
             .WithUsername("postgres")
             .WithPassword("postgres")
             .Build();
+        private DbConnection _connection = default!;
+        public Respawner Respawner { get; private set; } = default!;    
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -37,6 +42,10 @@ namespace OrderService.Tests
                 });
             });
         }
+        public async Task RespawnDbAsync()
+        {
+            await Respawner.ResetAsync(_connection);
+        }
 
         public async Task InitializeAsync()
         {
@@ -44,6 +53,18 @@ namespace OrderService.Tests
             //Path looks awful
             var migrationSql = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "../../../", "init.sql"));
             await _dbContainer.ExecScriptAsync(migrationSql);
+            _connection = new NpgsqlConnection(_dbContainer.GetConnectionString());
+            await _connection.OpenAsync();
+            await InitializeRespawner();
+        }
+
+        private async Task InitializeRespawner()
+        {
+            Respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
+            {
+                DbAdapter = DbAdapter.Postgres,
+                SchemasToInclude = ["public"]
+            });
         }
 
         public new Task DisposeAsync()

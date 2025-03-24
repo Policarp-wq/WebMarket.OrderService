@@ -7,7 +7,7 @@ namespace WebMarket.OrderService.Repositories
     public interface ICheckpointRepository
     {
         Task<Checkpoint?> FindClosest(Point point);
-        Task<Checkpoint> RegisterPoint(int userId, Point point);
+        Task<Checkpoint> RegisterPoint(int userId, Point point, bool IsDeliveryPoint);
         Task<bool> DeletePoint(int pointId);
 
         Task<List<Checkpoint>> GetCheckpointsIdByOwner(int ownerId);

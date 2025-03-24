@@ -59,16 +59,18 @@ namespace WebMarket.OrderService.Repositories
         {
             return await _dbSet
                 .AsNoTracking()
-                .Where(c => c.IsDelivryPoint).ToListAsync();
+                .Where(c => c.IsDeliveryPoint).ToListAsync();
         }
 
-        public async Task<Checkpoint> RegisterPoint(int userId, Point point)
+        public async Task<Checkpoint> RegisterPoint(int userId, Point point, bool IsDeliveryPoint)
         {
             if (userId < 0) throw new InvalidArgumentException($"User id must be > 0!: {userId}");
             var res = await _dbSet.AddAsync(new Checkpoint()
             {
                 OwnerId = userId,
-                Location = point
+                Location = point,
+                IsDeliveryPoint = IsDeliveryPoint
+                
             });
             await _context.SaveChangesAsync();
         

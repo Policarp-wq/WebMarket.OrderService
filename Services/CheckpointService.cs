@@ -48,9 +48,9 @@ namespace WebMarket.OrderService.Services
             return l.Select(c => (CheckpointInfo)c).ToList();
         }
 
-        public async Task<CheckpointInfo> RegisterPoint(int userId, Point point)
+        public async Task<CheckpointInfo> RegisterPoint(int userId, Point point, bool IsDeliveryPoint)
         {
-            return await _checkpointRepository.RegisterPoint(userId, point);
+            return await _checkpointRepository.RegisterPoint(userId, point, IsDeliveryPoint);
         }
     }
 }

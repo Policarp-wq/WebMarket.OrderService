@@ -8,7 +8,7 @@ namespace WebMarket.OrderService.Services
     {
         Task<CheckpointInfo?> FindClosest(Point point);
         Task<List<CheckpointInfo>> GetOwnersPoints(int ownerId);
-        Task<CheckpointInfo> RegisterPoint(int userId, Point point);
+        Task<CheckpointInfo> RegisterPoint(int userId, Point point, bool IsDeliveryPoint);
         Task<List<CheckpointInfo>> GetDeliveryCheckpoints();
         Task<bool> DeletePoint(int pointId);
         Task<List<CheckpointInfo>> GetAll();
