@@ -65,6 +65,7 @@ else
 {
     Log.Information("Service is healthy ;)");
 }
-
 app.UseHttpsRedirection();
 app.Run();
+
+public partial class Program { }
