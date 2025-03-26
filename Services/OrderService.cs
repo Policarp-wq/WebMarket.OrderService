@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Connections;
+﻿using Confluent.Kafka;
+using Microsoft.AspNetCore.Connections;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using WebMarket.OrderService.ApiContracts;
@@ -75,9 +76,9 @@ namespace WebMarket.OrderService.Services
             return order;
         }
 
-        private async Task SendOrderUpdatedEvent(OrderTrackingInfo info)
+        private Task<DeliveryResult<string, string>> SendOrderUpdatedEvent(OrderTrackingInfo info)
         {
-            await _producer.ProduceMessage(OrderUpdatedTopic, info.UserId.ToString(), JsonConvert.SerializeObject(info));
+            return _producer.ProduceMessage(OrderUpdatedTopic, info.UserId.ToString(), JsonConvert.SerializeObject(info));
         } 
 
         private async Task<Checkpoint?> GetClosest(int deliverypointID, int productOwnerId)
@@ -108,6 +109,7 @@ namespace WebMarket.OrderService.Services
                 throw new NotFoundException($"Failed to find closest checkpoints. Delivery: {deliverypointID} Supplier: {productOwnerId}");
 
             var trackNum = _trackNumberGenerator.GenerateTrackNumber();
+            // TODO: tracknumber repeat no protection
             var createdOrder = await _orderRepository.CreateOrder(customerID, productID, deliverypointID, closestSupplier.CheckpointId, trackNum);
             if (createdOrder == null)
                 throw new PrivateServerException($"Created null order ?? cust: {customerID}, prod: {productID}, deliv: {deliverypointID}, track: {trackNum}");

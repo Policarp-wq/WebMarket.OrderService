@@ -11,9 +11,9 @@ CREATE TABLE customer_order(
     customer_id integer NOT NULL,
     product_id integer NOT NULL,
     delivery_point_id integer NOT NULL REFERENCES checkpoint(checkpoint_id) ON DELETE RESTRICT,
-    checkpoint_id integer NOT NULL REFERENCES checkpoint(checkpoint_id) ON DELETE RESTRICT,
+    checkpoint_id integer NOT NULL REFERENCES checkpoint(checkpoint_id) ON DELETE RESTRICT, /** Can insert not delivery **/
     status order_status DEFAULT 'processing',
-    track_number char(9) not null UNIQUE, /** Performance issues **/
+    track_number VARCHAR(9) not null UNIQUE CHECK (LENGTH(track_number) = 9), /** Performance issues **/
     created_at timestamp DEFAULT CURRENT_TIMESTAMP
 );
 

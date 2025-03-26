@@ -13,12 +13,19 @@ namespace WebMarket.OrderService.Repositories
 
         public async Task<CustomerOrder> CreateOrder(int customerID, int productId, int deliveryPointID, int supplyCheckpointId, string trackNumber)
         {
+            if (deliveryPointID == supplyCheckpointId)
+                throw new ArgumentException($"Can't create order with deliveryPoint" +
+                    $" being same as supply: {deliveryPointID} - {supplyCheckpointId}");
+            var deliveryPoint = await _context.Checkpoints.FindAsync(deliveryPointID);
+            if (deliveryPoint == null || !deliveryPoint.IsDeliveryPoint)
+                throw new ArgumentException($"Provided delivery checkpoint is not delivery or doesn't exist");
             var res = await _dbSet.AddAsync(new CustomerOrder()
             {
                 CustomerId = customerID,
                 ProductId = productId,
                 CheckpointId = supplyCheckpointId,
                 DeliveryPointId = deliveryPointID,
+                DeliveryPoint = deliveryPoint,
                 TrackNumber = trackNumber,
                 Status = CustomerOrder.OrderStatus.Processing,
             });
@@ -28,7 +35,7 @@ namespace WebMarket.OrderService.Repositories
                 .Include(o => o.Checkpoint)
                 .Include(o => o.DeliveryPoint)
                 .SingleAsync(x => x.OrderId == res.Entity.OrderId);
-
+            //auto add chars
             return created;
         }
 

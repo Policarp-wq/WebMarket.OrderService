@@ -22,10 +22,13 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
             _logger = logger;
             _redis = multiplexer.GetDatabase();
         }
+        private bool IsGeoCoordValid(double c) => c <= 180 && c >= -180;
         //benchmark!
         public async Task<string> GetAddressByLongLat(double longitude, double latitude) //долгота и широта
         {
             string coordinatedKey = $"{longitude},{latitude}";
+            if (!(IsGeoCoordValid(longitude) && IsGeoCoordValid(latitude)))
+                throw new ArgumentException($"Provided coordinates are invalid! long: {longitude}, lat: {latitude}");
             var cachedAddress = await _redis.StringGetAsync(coordinatedKey);
             if (cachedAddress != RedisValue.Null)
                 return cachedAddress.ToString();
