@@ -85,10 +85,10 @@ namespace WebMarket.OrderService.Services
         {
             var deliveryCheckpoint = await _checkpointRepository.GetById(deliverypointID);
             if (deliveryCheckpoint == null)
-                throw new InvalidArgumentException($"Checkpoint with id {deliverypointID} not found");
+                throw new NotFoundException($"Delivery point with id {deliverypointID} not found");
             var suppliersCheckpoints = await _checkpointRepository.GetCheckpointsIdByOwner(productOwnerId);
             if (suppliersCheckpoints.Count == 0) // copilot says it's more efficient than Any()
-                throw new NotFoundException("No checkpoints for given supplier " + productOwnerId);
+                throw new NotFoundException("No checkpoints for provided supplier " + productOwnerId);
             return deliveryCheckpoint.FindClosest(suppliersCheckpoints);
         }
         /// <summary>
