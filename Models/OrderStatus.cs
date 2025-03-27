@@ -1,4 +1,6 @@
-﻿namespace WebMarket.OrderService.Models;
+﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+
+namespace WebMarket.OrderService.Models;
 
 public partial class CustomerOrder
 {
@@ -6,4 +8,5 @@ public partial class CustomerOrder
     {
         Processing, Packing_up, Delivering, Delivered, Completed, Denied
     }
+    public static OrderStatus DefaultStatus = OrderStatus.Processing;
 }

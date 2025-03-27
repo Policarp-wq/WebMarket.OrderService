@@ -57,7 +57,7 @@ namespace WebMarket.OrderService.Services
             return null;
         }
 
-        public async Task<CustomerOrder> GetOrderFullInfo(string trackNumber)
+        public async Task<CustomerOrder> GerOrderInfo(string trackNumber)
         {
             int? id = await GetIdFromRedis(trackNumber);
             CustomerOrder? order;
@@ -122,12 +122,12 @@ namespace WebMarket.OrderService.Services
 
         public async Task<OrderInfo> GetOrderInfo(string trackNumber)
         {
-            return await GetOrderFullInfo(trackNumber);
+            return await GerOrderInfo(trackNumber);
         }
 
         public async Task<OrderTrackingInfo> GetTrackingInfo(string trackNumber)
         {
-            var order = await GetOrderFullInfo(trackNumber);
+            var order = await GerOrderInfo(trackNumber);
             return await CreateTrackingInfo(order);
         }
 
@@ -150,11 +150,15 @@ namespace WebMarket.OrderService.Services
         {
             return await _orderRepository.ListOrders();
         }
-
+        //TODO: Redis not using tracknumb=id
         public async Task<bool> UpdateOrder(OrderUpdateInfo info)
         {
-            var order = await GetOrderFullInfo(info.TrackNumber);
-            var report = await _orderRepository.UpdateOrderInfo(order,info);
+            int? id = await GetIdFromRedis(info.TrackNumber);
+            OrderUpdateReport report;
+            if(id.HasValue)
+                report = await _orderRepository.UpdateOrderInfo(id.Value, info);
+            else report = await _orderRepository.UpdateOrderInfo(info);
+            //SetIdForTrackNumber(report.OrderInfo.TrackNumber, )
             if (report.Changed)
             {
                OrderTrackingInfo trackingInfo = await CreateTrackingInfo(report.OrderInfo);

@@ -27,7 +27,7 @@ namespace WebMarket.OrderService.Repositories
                 DeliveryPointId = deliveryPointID,
                 DeliveryPoint = deliveryPoint,
                 TrackNumber = trackNumber,
-                Status = CustomerOrder.OrderStatus.Processing,
+                Status = CustomerOrder.DefaultStatus,
             });
             //вставляет status хотя не должен 
             await _context.SaveChangesAsync();
@@ -67,7 +67,7 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet.AsNoTracking().ToListAsync();
         }
 
-        public async Task<OrderUpdateReport?> UpdateOrderInfo(OrderUpdateInfo info)
+        public async Task<OrderUpdateReport> UpdateOrderInfo(OrderUpdateInfo info)
         {
             var order = await _dbSet
                 .Include(o => o.Checkpoint)
@@ -77,7 +77,20 @@ namespace WebMarket.OrderService.Repositories
                 throw new NotFoundException($"Failed to find order with track number: {info.TrackNumber}");
             return await UpdateOrderInfo(order, info);
         }
-        public async Task<OrderUpdateReport> UpdateOrderInfo(CustomerOrder order, OrderUpdateInfo info)
+        public async Task<OrderUpdateReport> UpdateOrderInfo(int id, OrderUpdateInfo info)
+        {
+            if(!IsIdValid(id))
+                throw new ArgumentException($"Id {id} was invalid"); 
+            var order = await _dbSet
+                .Include(o => o.Checkpoint)
+                .Include(o => o.DeliveryPoint)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
+            if (order == null)
+                throw new NotFoundException($"Failed to find order with track number: {info.TrackNumber}");
+            return await UpdateOrderInfo(order, info);
+        }
+        //requires trackable order!
+        private async Task<OrderUpdateReport> UpdateOrderInfo(CustomerOrder order, OrderUpdateInfo info)
         {
             if (order.TrackNumber != info.TrackNumber)
                 throw new InvalidArgumentException($"TrackNumber from order {order.TrackNumber} is different from given info {info.TrackNumber}");
@@ -103,13 +116,13 @@ namespace WebMarket.OrderService.Repositories
                 try
                 {
                     await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
                 }
                 catch (Exception ex)
                 {
                     throw new PrivateServerException("Aborted saving order with given data", ex);
                 }
-                var report = new OrderUpdateReport(updated, order.CustomerId, (OrderInfo)order);
-                await transaction.CommitAsync();
+                OrderUpdateReport report = new(updated, order.CustomerId, (OrderInfo)order);
                 return report;
             });
             

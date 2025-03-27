@@ -1,16 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.SupportTools.TrackNumber;
 using WebMarket.OrderService.ApiContracts;
-using System.Diagnostics;
-using Xunit.Abstractions;
 
 namespace OrderService.Tests.Repositories
 {
