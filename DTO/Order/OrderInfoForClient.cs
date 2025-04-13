@@ -2,7 +2,7 @@
 using WebMarket.OrderService.Models;
 using static WebMarket.OrderService.Models.CustomerOrder;
 
-namespace WebMarket.OrderService.ApiContracts
+namespace WebMarket.OrderService.DTO.Order
 {
     public record OrderInfoForClient
     {
@@ -11,7 +11,7 @@ namespace WebMarket.OrderService.ApiContracts
         public readonly string TrackNumber;
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public readonly OrderStatus Status;
-        public OrderInfoForClient(string CurrentPosition, string DeliveryPoint, string TrackNumber, CustomerOrder.OrderStatus Status)
+        public OrderInfoForClient(string CurrentPosition, string DeliveryPoint, string TrackNumber, OrderStatus Status)
         {
             this.CurrentPosition = CurrentPosition;
             this.DeliveryPoint = DeliveryPoint;
@@ -19,6 +19,6 @@ namespace WebMarket.OrderService.ApiContracts
             this.Status = Status;
         }
     }
-    
-    
+
+
 }

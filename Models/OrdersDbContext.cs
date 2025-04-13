@@ -18,9 +18,10 @@ public partial class OrdersDbContext : DbContext
 
     public virtual DbSet<Checkpoint> Checkpoints { get; set; }
 
-    public virtual DbSet<CustomerHistory> CustomerHistories { get; set; }
+    public virtual DbSet<OrderStatusStory> CustomerHistories { get; set; }
 
     public virtual DbSet<CustomerOrder> CustomerOrders { get; set; }
+    public virtual DbSet<OrderTrace> OrderTraceses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,26 @@ public partial class OrdersDbContext : DbContext
             .HasPostgresExtension("postgis")
             .HasPostgresExtension("tiger", "postgis_tiger_geocoder")
             .HasPostgresExtension("topology", "postgis_topology");
+
+        modelBuilder.Entity<OrderTrace>(entity =>
+        {
+            entity.HasKey(o => o.TraceId);
+
+            entity.ToTable("order_trace");
+
+            entity.Property(o => o.OrderId)
+                .HasColumnName("order_id");
+
+            entity.Property(o => o.CheckpointId)
+                .HasColumnName("checkpoint_id");
+
+            entity.Property(o => o.DeliveryDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("delivery_date");
+
+            entity.HasOne<CustomerOrder>(o => o.CustomerOrder).WithMany(c => c.OrderTraces);
+        });
 
         modelBuilder.Entity<Checkpoint>(entity =>
         {
@@ -42,21 +63,25 @@ public partial class OrdersDbContext : DbContext
             entity.Property(e => e.CheckpointId).HasColumnName("checkpoint_id");
             entity.Property(e => e.IsDeliveryPoint).HasColumnName("is_delivery_point");
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
-            entity.Property(e => e.Location).HasColumnName("location").HasColumnType("geometry (point)");          
+            entity.Property(e => e.Location).HasColumnName("location").HasColumnType("geometry (point)");
+            entity.Property(e => e.Address).HasColumnName("address");
         });
 
-        modelBuilder.Entity<CustomerHistory>(entity =>
+        modelBuilder.Entity<OrderStatusStory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("customer_history_pkey");
+            entity.HasKey(e => e.StoryId).HasName("story_id_pkey");//!
 
             entity.ToTable("customer_history");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CutomerId).HasColumnName("cutomer_id");
-            entity.Property(e => e.OrderDate)
+            entity.Property(e => e.StoryId).HasColumnName("story_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.ChangeDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp without time zone")
-                .HasColumnName("order_date");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
+                .HasColumnName("change_date");
+            entity.Property(e => e.Status)
+                .HasColumnName("order_status")
+                .HasColumnType("order_status"); ;
         });
 
         modelBuilder.Entity<CustomerOrder>(entity =>
@@ -66,7 +91,6 @@ public partial class OrdersDbContext : DbContext
             entity.ToTable("customer_order");
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.CheckpointId).HasColumnName("checkpoint_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp without time zone")
@@ -80,11 +104,6 @@ public partial class OrdersDbContext : DbContext
             .HasColumnType("order_status");
 
             entity.Property(e => e.TrackNumber).HasColumnName("track_number");
-
-            entity.HasOne(d => d.Checkpoint).WithMany(p => p.CustomerOrderCheckpoints)
-                .HasForeignKey(d => d.CheckpointId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("customer_order_checkpoint_id_fkey");
 
             entity.HasOne(d => d.DeliveryPoint).WithMany(p => p.CustomerOrderDeliveryPoints)
                 .HasForeignKey(d => d.DeliveryPointId)

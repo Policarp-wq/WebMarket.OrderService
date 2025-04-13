@@ -17,10 +17,11 @@ public partial class Checkpoint
     [JsonConverter(typeof(PointJsonConverter))]
     public Point Location { get; set; } = null!;
     public bool IsDeliveryPoint { get; set; }
+    public string? Address {  get; set; }
 
-    public virtual ICollection<CustomerOrder> CustomerOrderCheckpoints { get; set; } = new List<CustomerOrder>();
+    public virtual ICollection<CustomerOrder> CustomerOrderCheckpoints { get; set; } = [];
 
-    public virtual ICollection<CustomerOrder> CustomerOrderDeliveryPoints { get; set; } = new List<CustomerOrder>();
+    public virtual ICollection<CustomerOrder> CustomerOrderDeliveryPoints { get; set; } = [];
     /// <summary>
     ///  
     /// </summary>

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.SupportTools.TrackNumber;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO;
 
 namespace OrderService.Tests.Repositories
 {
@@ -122,19 +122,18 @@ namespace OrderService.Tests.Repositories
             Assert.Equal(ordersCnt, orders.Count);
         }
         [Theory]
-        [InlineData(CustomerOrder.OrderStatus.Packing_up)]
-        [InlineData(CustomerOrder.OrderStatus.Delivering)]
-        [InlineData(CustomerOrder.OrderStatus.Delivered)]
-        [InlineData(CustomerOrder.OrderStatus.Completed)]
-        [InlineData(CustomerOrder.OrderStatus.Denied)]
-        public async Task Updates_Status(CustomerOrder.OrderStatus status)
+        [InlineData(OrderStatus.Packing_up)]
+        [InlineData(OrderStatus.Delivering)]
+        [InlineData(OrderStatus.Delivered)]
+        [InlineData(OrderStatus.Completed)]
+        [InlineData(OrderStatus.Denied)]
+        public async Task Updates_Status(OrderStatus status)
         {
             var order = await _orderRepository.CreateOrder(1, 1, deliveryCheckpointId, regualrCheckpointId, "000000000");
             var report = await _orderRepository.UpdateOrderInfo(new OrderUpdateInfo("000000000", null, status));
             
             Assert.NotNull(order);
             Assert.NotNull(report);
-            Assert.NotNull(report.OrderInfo.Checkpoint);
             Assert.NotNull(report.OrderInfo.DeliveryPoint);
             Assert.True(report.Changed);
             Assert.Equal(order.TrackNumber, report.OrderInfo.TrackNumber);

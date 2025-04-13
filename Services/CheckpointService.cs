@@ -1,19 +1,22 @@
 ﻿using NetTopologySuite.Geometries;
 using StackExchange.Redis;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO.Checkpoints;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
+using WebMarket.OrderService.SupportTools.MapSupport;
 
 namespace WebMarket.OrderService.Services
 {
     public class CheckpointService : BaseService, ICheckpointService
     {
-        private ICheckpointRepository _checkpointRepository;
-        private IDatabase _redis;
-        public CheckpointService(ICheckpointRepository repository, IConnectionMultiplexer multiplexer)
+        private readonly ICheckpointRepository _checkpointRepository;
+        private readonly IDatabase _redis;
+        private readonly IMapGeocoder _geocoder;
+        public CheckpointService(ICheckpointRepository repository, IConnectionMultiplexer multiplexer, IMapGeocoder geocoder)
         {
             _checkpointRepository = repository;
-            _redis = multiplexer.GetDatabase();       
+            _redis = multiplexer.GetDatabase();
+            _geocoder = geocoder;
         }
 
         public async Task<bool> DeletePoint(int pointId)
@@ -28,7 +31,7 @@ namespace WebMarket.OrderService.Services
                 return null;
             return res;
         }
-
+        //TODO: optimize
         public async Task<List<CheckpointInfo>> GetAll()
         {
             var l = await _checkpointRepository.GetAll();
@@ -50,7 +53,8 @@ namespace WebMarket.OrderService.Services
 
         public async Task<CheckpointInfo> RegisterPoint(int userId, Point point, bool IsDeliveryPoint)
         {
-            return await _checkpointRepository.RegisterPoint(userId, point, IsDeliveryPoint);
+            string? address = await _geocoder.GetAddressByLongLat(point);
+            return await _checkpointRepository.RegisterPoint(userId, point, IsDeliveryPoint, address);
         }
     }
 }

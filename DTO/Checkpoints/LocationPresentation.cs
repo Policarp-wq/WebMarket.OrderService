@@ -2,7 +2,7 @@
 
 using NetTopologySuite.Geometries;
 
-namespace WebMarket.OrderService.ApiContracts
+namespace WebMarket.OrderService.DTO.Checkpoints
 {
     public record LocationPresentation(double Longitude, double Latitude)
     {

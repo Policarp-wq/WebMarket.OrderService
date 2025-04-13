@@ -1,4 +1,4 @@
-﻿using WebMarket.OrderService.ApiContracts;
+﻿using WebMarket.OrderService.DTO.Order;
 using WebMarket.OrderService.Models;
 
 namespace WebMarket.OrderService.Repositories
@@ -12,6 +12,8 @@ namespace WebMarket.OrderService.Repositories
         Task<OrderUpdateReport> UpdateOrderInfo(int id, OrderUpdateInfo info);
         // Task<OrderUpdateReport> UpdateOrderInfo(CustomerOrder order, OrderUpdateInfo info);
         Task<List<CustomerOrder>> GetUserOrders(int userid);
+        Task<List<int>> GetSupplierProcessingOrders(int supplierId);
         Task<List<CustomerOrder>> ListOrders();
+        Task<CustomerOrder?> GetOrderById(string trackNumber);
     }
 }

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.Geometries;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO.Checkpoints;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Services;
 using WebMarket.OrderService.SupportTools.MapSupport;

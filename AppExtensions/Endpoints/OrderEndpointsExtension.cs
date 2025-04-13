@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO.Order;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.Services;
@@ -24,6 +24,7 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
             builder.MapGet("getOrderStatuses", GetPossibleStatuses);
             builder.MapGet("getOrderByTrackNumber", GetOrderByTrackNumber);
             builder.MapGet("getUsersOrders", GetUsersOrders);
+            builder.MapGet("getProcessingOrders", GetSupplierProcessingOrders);
             return builder;
         }
 
@@ -44,7 +45,12 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
 
         private static Ok<string[]> GetPossibleStatuses()
         {
-            return TypedResults.Ok(Enum.GetNames(typeof(CustomerOrder.OrderStatus)));
+            return TypedResults.Ok(Enum.GetNames(typeof(OrderStatus)));
+        }
+        //check
+        private static async Task<Ok<List<int>>> GetSupplierProcessingOrders(IOrderService orderService, [FromQuery] int supplierId)
+        {
+            return TypedResults.Ok(await orderService.GetSupplierProcessingOrders(supplierId));
         }
 
         public static async Task<Ok<string>> CreateOrder(IOrderService orderService, OrderCreateInfo createInfo)
@@ -61,7 +67,7 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
             return TypedResults.Ok(updated);
         }
 
-        public static async Task<Ok<bool>> UpdateOrderStatus(IOrderService orderService, [FromQuery] string trackNumber, CustomerOrder.OrderStatus orderStatus)
+        public static async Task<Ok<bool>> UpdateOrderStatus(IOrderService orderService, [FromQuery] string trackNumber, OrderStatus orderStatus)
         {
             return await UpdateOrder(orderService, new OrderUpdateInfo(trackNumber, null, orderStatus));
         }

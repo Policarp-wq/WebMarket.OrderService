@@ -8,7 +8,7 @@ using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.Services;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO;
 
 namespace OrderService.Tests.Services
 {
@@ -139,7 +139,7 @@ namespace OrderService.Tests.Services
             Assert.False(report);
             var updated = await _orderService.GetOrderInfo(trackNumber);
             Assert.Equal(deliveryCheckpointId, updated.DeliveryPoint.CheckpointId);
-            Assert.Equal(CustomerOrder.DefaultStatus, updated.Status);
+            Assert.Equal(CustomerOrder.InitialStatus, updated.Status);
         }
         [Fact]
         public async Task Updates_Particial_Data_Status()
@@ -163,7 +163,7 @@ namespace OrderService.Tests.Services
             var updated = await _orderService.GetOrderInfo(trackNumber);
 
             Assert.Equal(regularCheckpoints[2].CheckpointId, updated.Checkpoint.CheckpointId);
-            Assert.Equal(CustomerOrder.DefaultStatus, updated.Status);
+            Assert.Equal(CustomerOrder.InitialStatus, updated.Status);
         }
 
 

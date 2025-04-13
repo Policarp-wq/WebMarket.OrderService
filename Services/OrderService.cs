@@ -2,12 +2,13 @@
 using Microsoft.AspNetCore.Connections;
 using Newtonsoft.Json;
 using StackExchange.Redis;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO.Order;
 using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.SupportTools.Kafka;
 using WebMarket.OrderService.SupportTools.MapSupport;
+using WebMarket.OrderService.SupportTools.Redis;
 using WebMarket.OrderService.SupportTools.TrackNumber;
 
 namespace WebMarket.OrderService.Services
@@ -15,71 +16,58 @@ namespace WebMarket.OrderService.Services
     public class OrderService : BaseService, IOrderService
     {
         private const string OrderUpdatedTopic = "order_update";
+        private const string OrderDeliveredTopic = "order_delivered";
+        private const string OrderCreatedTopic = "order_created";
         private readonly IOrderRepository _orderRepository;
         private readonly ICheckpointRepository _checkpointRepository;
-        private readonly ITrackNumberGenerator _trackNumberGenerator;
+        private readonly ITrackNumberService _trackNumberService;
         private readonly IKafkaMessageProducer _producer;
         private readonly IMapGeocoder _geocoder;
-        private readonly IDatabase _redis;
-        private readonly ILogger _logger;
-        public OrderService(IOrderRepository orderRepository,  ITrackNumberGenerator trackNumberGenerator,
+        private readonly IRedisHandler _redisHandler;
+        public OrderService(IOrderRepository orderRepository,  ITrackNumberService trackNumberService,
             ICheckpointRepository checkpointRepository,
             IKafkaMessageProducer messageProducer,
             IMapGeocoder geocoder,
             IConnectionMultiplexer connection,
-            ILogger<OrderService> logger
+            ILogger<OrderService> logger,
+            IRedisHandler redisHandler
             )   
         {
             _orderRepository = orderRepository;
-            _trackNumberGenerator = trackNumberGenerator;
+            _trackNumberService = trackNumberService;
             _checkpointRepository = checkpointRepository;
             _producer = messageProducer;
             _geocoder = geocoder;
-            _redis = connection.GetDatabase();
-            _logger = logger;
+            _redisHandler = redisHandler;
         }
 
-        private async Task<bool> SetIdForTrackNumber(string trackNumber, int id)
-        {
-            _logger.LogDebug("Redis: setting track number for id {Id}", id);
-            return await _redis.StringSetAsync(trackNumber, id);
-        }
 
-        private async Task<int?> GetIdFromRedis(string trackNumber)
-        {
-            _logger.LogDebug("Redis: Requesting track number");
-            var redisVal = await _redis.StringGetAsync(trackNumber);
-            if (redisVal.HasValue && redisVal.IsInteger)
-            {
-                redisVal.TryParse(out int id);
-                return id;
-            }
-            return null;
-        }
-
+     
         public async Task<CustomerOrder> GerOrderInfo(string trackNumber)
         {
-            int? id = await GetIdFromRedis(trackNumber);
-            CustomerOrder? order;
-            if (id.HasValue)
-                order = await _orderRepository.GetOrderInfo(id.Value);
-            else
+            try
             {
-                order = await _orderRepository.GetOrderInfo(trackNumber);
-                if (order != null)
-                {
-                    await SetIdForTrackNumber(trackNumber, order.OrderId);
-                }
+                int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
+                return (await _orderRepository.GetOrderInfo(id))!;
             }
-            if (order == null)
+            catch (ArgumentException ex)
+            {
                 throw new NotFoundException($"Failed to find order with track number: {trackNumber}");
-            return order;
+            }
         }
 
         private Task<DeliveryResult<string, string>> SendOrderUpdatedEvent(OrderTrackingInfo info)
         {
             return _producer.ProduceMessage(OrderUpdatedTopic, info.UserId.ToString(), JsonConvert.SerializeObject(info));
-        } 
+        }
+        private Task<DeliveryResult<string, string>> SendOrderCreatedEvent(CustomerOrder customerOrder, int supplierId)
+        {
+            return _producer.ProduceMessage(OrderCreatedTopic, supplierId.ToString(), customerOrder.OrderId.ToString());
+        }
+        private Task<DeliveryResult<string, string>> SendOrderDeliveredEvent(OrderTrackingInfo info)
+        {
+            return _producer.ProduceMessage(OrderDeliveredTopic, info.UserId.ToString(), JsonConvert.SerializeObject(info));
+        }
 
         private async Task<Checkpoint?> GetClosest(int deliverypointID, int productOwnerId)
         {
@@ -91,6 +79,7 @@ namespace WebMarket.OrderService.Services
                 throw new NotFoundException("No checkpoints for provided supplier " + productOwnerId);
             return deliveryCheckpoint.FindClosest(suppliersCheckpoints);
         }
+        
         /// <summary>
         /// 
         /// </summary>
@@ -108,17 +97,21 @@ namespace WebMarket.OrderService.Services
             if(closestSupplier == null)
                 throw new NotFoundException($"Failed to find closest checkpoints. Delivery: {deliverypointID} Supplier: {productOwnerId}");
 
-            var trackNum = _trackNumberGenerator.GenerateTrackNumber();
+            var trackNum = _trackNumberService.GetTrackNumber();
             // TODO: tracknumber repeat no protection
             var createdOrder = await _orderRepository.CreateOrder(customerID, productID, deliverypointID, closestSupplier.CheckpointId, trackNum);
             if (createdOrder == null)
                 throw new PrivateServerException($"Created null order ?? cust: {customerID}, prod: {productID}, deliv: {deliverypointID}, track: {trackNum}");
-
             await SetIdForTrackNumber(trackNum, createdOrder.OrderId);
+            await SendOrderCreatedEvent(createdOrder, productOwnerId);
             await SendOrderUpdatedEvent(await CreateTrackingInfo(createdOrder));
             return createdOrder.TrackNumber;
         }
 
+        private async Task SetIdForTrackNumber(string trackNum, int orderId)
+        {
+           await _redisHandler.Save(trackNum, orderId.ToString());
+        }
 
         public async Task<OrderInfo> GetOrderInfo(string trackNumber)
         {
@@ -133,10 +126,11 @@ namespace WebMarket.OrderService.Services
 
         private async Task<OrderTrackingInfo> CreateTrackingInfo(OrderInfo order)
         {
-            string currentPos = await _geocoder.GetAddressByLongLat(order.Checkpoint.Location);
+            throw new NotImplementedException();
+            //string currentPos = await _geocoder.GetAddressByLongLat(order.Checkpoint.Location);
             string deliveryPos = await _geocoder.GetAddressByLongLat(order.DeliveryPoint.Location);
 
-            return new OrderTrackingInfo(order.UserId, order.TrackNumber, currentPos, deliveryPos, order.Status);
+            return new OrderTrackingInfo(order.OrderId, order.UserId, order.TrackNumber, "No info", deliveryPos, order.Status);
         }
         // WHEN ALL !!!
         public async Task<List<OrderTrackingInfo>> GetUsersOrders(int userId)
@@ -153,19 +147,13 @@ namespace WebMarket.OrderService.Services
         //TODO: Redis not using tracknumb=id
         public async Task<bool> UpdateOrder(OrderUpdateInfo info)
         {
-            int? id = await GetIdFromRedis(info.TrackNumber);
-            OrderUpdateReport report;
-            if(id.HasValue)
-                report = await _orderRepository.UpdateOrderInfo(id.Value, info);
-            else report = await _orderRepository.UpdateOrderInfo(info);
-            //SetIdForTrackNumber(report.OrderInfo.TrackNumber, )
-            if (report.Changed)
-            {
-               OrderTrackingInfo trackingInfo = await CreateTrackingInfo(report.OrderInfo);
-               await SendOrderUpdatedEvent(trackingInfo);
-            }
-            return report.Changed;
+            throw new NotImplementedException();
+            
         }
 
+        public async Task<List<int>> GetSupplierProcessingOrders(int supplierId)
+        {
+            return await _orderRepository.GetSupplierProcessingOrders(supplierId);
+        }
     }
 }

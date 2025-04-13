@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.SupportTools;
 
-namespace WebMarket.OrderService.ApiContracts
+namespace WebMarket.OrderService.DTO.Checkpoints
 {
     public record CheckpointInfo
     {
@@ -14,7 +14,7 @@ namespace WebMarket.OrderService.ApiContracts
         public CheckpointInfo(int CheckpointId, Point Point, int OwnerId)
         {
             this.CheckpointId = CheckpointId;
-            this.Location = Point;
+            Location = Point;
             this.OwnerId = OwnerId;
         }
         public static implicit operator CheckpointInfo(Checkpoint checkpoint)

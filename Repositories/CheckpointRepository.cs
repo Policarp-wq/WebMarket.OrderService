@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using NetTopologySuite.Geometries;
 using Npgsql;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO;
 using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.Models;
 
@@ -62,15 +62,15 @@ namespace WebMarket.OrderService.Repositories
                 .Where(c => c.IsDeliveryPoint).ToListAsync();
         }
 
-        public async Task<Checkpoint> RegisterPoint(int userId, Point point, bool IsDeliveryPoint)
+        public async Task<Checkpoint> RegisterPoint(int userId, Point point, bool IsDeliveryPoint, string? address = null)
         {
             if (userId < 0) throw new InvalidArgumentException($"User id must be > 0!: {userId}");
             var res = await _dbSet.AddAsync(new Checkpoint()
             {
                 OwnerId = userId,
                 Location = point,
-                IsDeliveryPoint = IsDeliveryPoint
-                
+                IsDeliveryPoint = IsDeliveryPoint,
+                Address = address
             });
             await _context.SaveChangesAsync();
         

@@ -13,6 +13,7 @@ using WebMarket.OrderService.Services;
 using WebMarket.OrderService.SupportTools;
 using WebMarket.OrderService.SupportTools.Kafka;
 using WebMarket.OrderService.SupportTools.MapSupport;
+using WebMarket.OrderService.SupportTools.Redis;
 using WebMarket.OrderService.SupportTools.TrackNumber;
 
 namespace WebMarket.OrderService.AppExtensions
@@ -27,7 +28,7 @@ namespace WebMarket.OrderService.AppExtensions
                 var dbOpt = serviceProvider.GetService<IOptions<DatabaseOptions>>()!.Value;
                 dbContextOptBuilder.UseNpgsql(dbOpt.ConnectionString, sqlOpt =>
                 {
-                    sqlOpt.MapEnum<CustomerOrder.OrderStatus>("order_status");
+                    sqlOpt.MapEnum<OrderStatus>("order_status");
                     sqlOpt.UseNetTopologySuite();
                     sqlOpt.CommandTimeout(dbOpt.CommandTimeout);
                     sqlOpt.EnableRetryOnFailure(dbOpt.CommandTimeout);
@@ -69,7 +70,7 @@ namespace WebMarket.OrderService.AppExtensions
                 var redisOpt = x.GetService<IOptions<RedisOptions>>()!.Value;
                 return redisOpt.ConnectionString;
             });
-            
+            services.AddSingleton<IRedisHandler, RedisHandler>();
             return services;
         }
 
@@ -78,8 +79,11 @@ namespace WebMarket.OrderService.AppExtensions
             services.AddScoped<ICheckpointService, CheckpointService>();
             services.AddScoped<ICheckpointRepository, CheckpointRepository>();
             services.AddScoped<IOrderRepository, OrderRepository>();
-            services.AddScoped<IOrderService, WebMarket.OrderService.Services.OrderService>();
+            services.AddScoped<IOrderService, Services.OrderService>();
             services.AddSingleton<ITrackNumberGenerator, TrackNumberGenerator>();
+            services.AddSingleton<ITrackNumberService, TrackNumberService>();
+            services.AddScoped<IOrderTraceRepository, OrderTraceRepository>();
+            services.AddScoped<IOrderTraceService, OrderTraceService>();
             return services;
         }
 

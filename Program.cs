@@ -37,7 +37,7 @@ builder.Services.ConfigureOptions<RedisOptionsSetup>();
 builder.Services.ConfigureRedis(healthCheckBuilder);
 
 
-builder.Services.RegisterHttpClient(builder.Configuration.GetValue<string>(YandexAPI.YandexGeoAPIKeyConfigName));
+builder.Services.RegisterHttpClient(builder.Configuration.GetValue<string>(YandexAPI.YandexGeoAPIKeyConfigName)!);
 
 
 var app = builder.Build();

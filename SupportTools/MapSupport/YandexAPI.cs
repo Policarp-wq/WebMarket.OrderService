@@ -24,7 +24,7 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
         }
         private bool IsGeoCoordValid(double c) => c <= 180 && c >= -180;
         //benchmark!
-        public async Task<string> GetAddressByLongLat(double longitude, double latitude) //долгота и широта
+        public async Task<string?> GetAddressByLongLat(double longitude, double latitude) //долгота и широта
         {
             string coordinatedKey = $"{longitude},{latitude}";
             if (!(IsGeoCoordValid(longitude) && IsGeoCoordValid(latitude)))
@@ -54,7 +54,7 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
                 JObject jobject = (JObject)JsonConvert.DeserializeObject(body);
                 var address = jobject.SelectToken(AddressPath)!.Value<string>();
                 if (address == null)
-                    return string.Empty;
+                    return null;
                 await _redis.StringSetAsync(coordinatedKey, address);
                 return address;
             }
@@ -70,7 +70,7 @@ namespace WebMarket.OrderService.SupportTools.MapSupport
             throw new NotImplementedException();
         }
 
-        public async Task<string> GetAddressByLongLat(Point point)
+        public async Task<string?> GetAddressByLongLat(Point point)
         {
             return await GetAddressByLongLat(point.X, point.Y);
         }

@@ -1,5 +1,5 @@
 ﻿using NetTopologySuite.Geometries;
-using WebMarket.OrderService.ApiContracts;
+using WebMarket.OrderService.DTO.Checkpoints;
 using WebMarket.OrderService.Models;
 
 namespace WebMarket.OrderService.Services
