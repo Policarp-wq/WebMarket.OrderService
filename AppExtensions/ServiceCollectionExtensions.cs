@@ -81,7 +81,7 @@ namespace WebMarket.OrderService.AppExtensions
             services.AddScoped<IOrderRepository, OrderRepository>();
             services.AddScoped<IOrderService, Services.OrderService>();
             services.AddSingleton<ITrackNumberGenerator, TrackNumberGenerator>();
-            services.AddSingleton<ITrackNumberService, TrackNumberService>();
+            services.AddScoped<ITrackNumberService, TrackNumberService>(); // requires repo which is scoped
             services.AddScoped<IOrderTraceRepository, OrderTraceRepository>();
             services.AddScoped<IOrderTraceService, OrderTraceService>();
             return services;

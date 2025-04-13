@@ -9,7 +9,9 @@ namespace WebMarket.OrderService.Services
     {
         private readonly ITrackNumberGenerator _trackNumberGenerator;
         private readonly IOrderRepository _orderRepository;
-        private readonly IRedisHandler _redis; 
+        private readonly IRedisHandler _redis;
+        public static string GetRedisTrackKey(string trackNumber) => $"track:{trackNumber}";
+        public static readonly TimeSpan TrackNumberExpirationDate = TimeSpan.FromDays(5);
         public TrackNumberService(ITrackNumberGenerator generator, IOrderRepository orderRepository, IRedisHandler handler) 
         {
             _trackNumberGenerator = generator;
@@ -18,7 +20,7 @@ namespace WebMarket.OrderService.Services
         }
         public async Task<int> GetOrderIdByTrackNumber(string trackNumber)
         {
-            var id = await _redis.GetInt(trackNumber);
+            var id = await _redis.GetInt(GetRedisTrackKey(trackNumber));
             if (id.HasValue)
                 return id.Value;
             var order = await _orderRepository.GetOrderById(trackNumber);
@@ -27,7 +29,11 @@ namespace WebMarket.OrderService.Services
                 await _redis.Save(trackNumber, order.OrderId.ToString());
                 return id.Value;
             }
-            throw new ArgumentException("No order id for tracknumber {tracknumber}", trackNumber);
+            throw new ArgumentException("No order id for trackNumber {tracknumber}", trackNumber);
+        }
+        public async Task<bool> CacheTrackNumber(int orderId, string trackNumber)
+        {
+            return await _redis.Save(GetRedisTrackKey(trackNumber), orderId, TrackNumberExpirationDate);
         }
 
         public string GetTrackNumber()

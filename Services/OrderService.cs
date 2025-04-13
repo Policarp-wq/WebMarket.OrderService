@@ -42,7 +42,6 @@ namespace WebMarket.OrderService.Services
         }
 
 
-     
         public async Task<CustomerOrder> GerOrderInfo(string trackNumber)
         {
             try
@@ -93,19 +92,19 @@ namespace WebMarket.OrderService.Services
 
         public async Task<string> CreateOrder(int customerID, int productID, int deliverypointID, int productOwnerId)
         {
-            var closestSupplier = await GetClosest(deliverypointID, productOwnerId);
-            if(closestSupplier == null)
-                throw new NotFoundException($"Failed to find closest checkpoints. Delivery: {deliverypointID} Supplier: {productOwnerId}");
+            //var closestSupplier = await GetClosest(deliverypointID, productOwnerId);
+            //if(closestSupplier == null)
+            //    throw new NotFoundException($"Failed to find closest checkpoints. Delivery: {deliverypointID} Supplier: {productOwnerId}");
 
             var trackNum = _trackNumberService.GetTrackNumber();
             // TODO: tracknumber repeat no protection
-            var createdOrder = await _orderRepository.CreateOrder(customerID, productID, deliverypointID, closestSupplier.CheckpointId, trackNum);
+            var createdOrder = await _orderRepository.CreateOrder(customerID, productID, deliverypointID, trackNum);
             if (createdOrder == null)
                 throw new PrivateServerException($"Created null order ?? cust: {customerID}, prod: {productID}, deliv: {deliverypointID}, track: {trackNum}");
-            await SetIdForTrackNumber(trackNum, createdOrder.OrderId);
-            await SendOrderCreatedEvent(createdOrder, productOwnerId);
-            await SendOrderUpdatedEvent(await CreateTrackingInfo(createdOrder));
-            return createdOrder.TrackNumber;
+            //await SetIdForTrackNumber(trackNum, createdOrder.OrderId);
+            //await SendOrderCreatedEvent(createdOrder, productOwnerId);
+            //await SendOrderUpdatedEvent(await CreateTrackingInfo(createdOrder));
+            return trackNum;
         }
 
         private async Task SetIdForTrackNumber(string trackNum, int orderId)
@@ -113,9 +112,15 @@ namespace WebMarket.OrderService.Services
            await _redisHandler.Save(trackNum, orderId.ToString());
         }
 
+        public async Task<OrderInfo> GetOrderInfo(int id)
+        {
+            return await GetOrderInfo(id);
+        }
+
         public async Task<OrderInfo> GetOrderInfo(string trackNumber)
         {
-            return await GerOrderInfo(trackNumber);
+            int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
+            return await GetOrderInfo(id);
         }
 
         public async Task<OrderTrackingInfo> GetTrackingInfo(string trackNumber)

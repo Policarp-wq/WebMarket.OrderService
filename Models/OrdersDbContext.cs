@@ -26,7 +26,7 @@ public partial class OrdersDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .HasPostgresEnum("order_status", new[] { "processing", "packing_up", "delivering", "delivered", "completed", "denied" })
+            //.HasPostgresEnum("order_status", new[] { "processing", "packing_up", "delivering", "delivered", "completed", "denied" })
             .HasPostgresExtension("fuzzystrmatch")
             .HasPostgresExtension("postgis")
             .HasPostgresExtension("tiger", "postgis_tiger_geocoder")
@@ -81,7 +81,8 @@ public partial class OrdersDbContext : DbContext
                 .HasColumnName("change_date");
             entity.Property(e => e.Status)
                 .HasColumnName("order_status")
-                .HasColumnType("order_status"); ;
+                .HasConversion(s => (int)s,
+                    v => (OrderStatus)Enum.Parse(typeof(OrderStatus), v.ToString()));
         });
 
         modelBuilder.Entity<CustomerOrder>(entity =>
@@ -100,8 +101,10 @@ public partial class OrdersDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Status)
             .HasColumnName("status")
+            .HasConversion(s => (int)s,
+                    v => (OrderStatus)Enum.Parse(typeof(OrderStatus), v.ToString())); ;
             //.HasConversion(v => v.ToString().ToLower(), v => (CustomerOrder.OrderStatus)Enum.Parse(typeof(CustomerOrder.OrderStatus), v))
-            .HasColumnType("order_status");
+            //.HasColumnType("order_status");
 
             entity.Property(e => e.TrackNumber).HasColumnName("track_number");
 

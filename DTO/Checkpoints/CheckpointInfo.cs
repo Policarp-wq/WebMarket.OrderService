@@ -10,16 +10,20 @@ namespace WebMarket.OrderService.DTO.Checkpoints
         public int CheckpointId { get; set; }
         [JsonConverter(typeof(PointJsonConverter))]
         public Point Location { get; set; }
+        public string? Addres {  get; set; }
         public int OwnerId { get; set; }
-        public CheckpointInfo(int CheckpointId, Point Point, int OwnerId)
+        public bool IsDelivery {  get; set; }
+        public CheckpointInfo(int CheckpointId, Point Point, int OwnerId, bool IsDelivery, string? Address)
         {
             this.CheckpointId = CheckpointId;
             Location = Point;
             this.OwnerId = OwnerId;
+            this.IsDelivery = IsDelivery;
+            this.Addres = Address;
         }
         public static implicit operator CheckpointInfo(Checkpoint checkpoint)
         {
-            return new CheckpointInfo(checkpoint.CheckpointId, checkpoint.Location, checkpoint.OwnerId);
+            return new CheckpointInfo(checkpoint.CheckpointId, checkpoint.Location, checkpoint.OwnerId,checkpoint.IsDeliveryPoint, checkpoint.Address);
         }
     }
 }

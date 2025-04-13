@@ -38,10 +38,15 @@ namespace WebMarket.OrderService.SupportTools.Redis
             return null;
         }
 
-        public async Task<bool> Save(string key, string value) //expiration date
+        public async Task<bool> Save(string key, string value, TimeSpan? expiration = null) //expiration date
         {
             _logger.LogDebug("Redis: save key {key}", key);
-            return await _redis.StringSetAsync(key, value);
+            return await _redis.StringSetAsync(key, value, expiration);
+        }
+
+        public async Task<bool> Save(string key, int value, TimeSpan? expiration = null)
+        {
+            return await _redis.StringSetAsync(key, value.ToString(), expiration);
         }
     }
 }

@@ -4,5 +4,5 @@ namespace WebMarket.OrderService.Models;
 
 public enum OrderStatus
 {
-    Processing, Packing_up, Delivering, Delivered, Completed, Denied
+    Processing = 1, Packing_up = 2, Delivering = 3, Delivered = 4, Completed = 5, Denied = 6
 }

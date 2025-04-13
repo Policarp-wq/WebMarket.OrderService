@@ -19,8 +19,6 @@ public partial class Checkpoint
     public bool IsDeliveryPoint { get; set; }
     public string? Address {  get; set; }
 
-    public virtual ICollection<CustomerOrder> CustomerOrderCheckpoints { get; set; } = [];
-
     public virtual ICollection<CustomerOrder> CustomerOrderDeliveryPoints { get; set; } = [];
     /// <summary>
     ///  
