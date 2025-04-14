@@ -43,6 +43,8 @@ public partial class OrdersDbContext : DbContext
 
             entity.Property(o => o.CheckpointId)
                 .HasColumnName("checkpoint_id");
+            entity.Property(o => o.DeliveryStatus)
+                .HasColumnName("delivery_status");
 
             entity.Property(o => o.DeliveryDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")

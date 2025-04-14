@@ -1,6 +1,7 @@
 ﻿
 using StackExchange.Redis;
 using WebMarket.OrderService.DTO.Order;
+using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.SupportTools.Redis;
 
@@ -15,6 +16,13 @@ namespace WebMarket.OrderService.Services
             _traceRepository = traceRepository;
             _trackNumberService = trackNumberService;
         }
+
+        public async Task AddRouteUnit(string trackNumber, int checkpointId)
+        {
+            int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
+            await _traceRepository.AddRouteUnit(id, checkpointId);
+        }
+
         public async Task<OrderTraceRoute> GetOrderRoute(int orderId)
         {
             var route = await _traceRepository.GetOrderRoute(orderId);
@@ -25,6 +33,18 @@ namespace WebMarket.OrderService.Services
         {
             int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
             return await GetOrderRoute(id);
+        }
+
+        public async Task<bool> SetOrderDelivered(string trackNumber, DateTime deliveredTime)
+        {
+            int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
+            return await _traceRepository.SetOrderDeliveredTime(id, deliveredTime);
+        }
+
+        public async Task<bool> UpdateLastTraceInfo(string trackNumber, DeliveryStatus status)
+        {
+            int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
+            return await _traceRepository.UpdateLastTraceInfo(id, status);
         }
     }
 }

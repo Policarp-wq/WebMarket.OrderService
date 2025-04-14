@@ -9,7 +9,18 @@ namespace WebMarket.OrderService.Repositories
         public OrderTraceRepository(OrdersDbContext context) : base(context, context => context.OrderTraceses)
         {
         }
-        
+
+        public async Task AddRouteUnit(int orderId, int checkpointId)
+        {
+            _dbSet.Add(new OrderTrace
+            { 
+                OrderId = orderId,
+                CheckpointId = checkpointId,
+                DeliveryStatus = OrderTrace.InitStatus,
+                DeliveryDate = null
+            });
+            await _context.SaveChangesAsync();
+        }
 
         public async Task<IEnumerable<OrderTraceRouteUnit>> GetOrderRoute(int OrderId)
         {
@@ -22,9 +33,42 @@ namespace WebMarket.OrderService.Repositories
                 new OrderTraceRouteUnit
                 (
                     x.Checkpoint.Address,
-                    x.DeliveryDate
+                    x.DeliveryDate,
+                    x.DeliveryStatus
                 ))
                 .ToListAsync();
+        }
+        private async Task<OrderTrace?> GetLastTrackable(int orderId)
+        {
+            return await _dbSet
+                .Where(t => t.OrderId == orderId)
+                .OrderBy(t => t.DeliveryDate)
+                .LastOrDefaultAsync();
+        }
+
+        public async Task<bool> UpdateLastTraceInfo(int orderId, DeliveryStatus status)
+        {
+            var lastTrace = await GetLastTrackable(orderId);
+            if (lastTrace == null)
+                throw new ArgumentException($"Provided order id {orderId} has no trace but attempted to update status to {status}");
+            if (lastTrace.DeliveryStatus > status)
+                throw new ArgumentException($"Attempt to update status that logically is earlier than current {lastTrace.DeliveryStatus}. Tried: {status}");
+            if(lastTrace.DeliveryStatus == status)
+                return false;
+            lastTrace.DeliveryStatus = status;
+            return true;
+        }
+        //Sets delivery status to sorts cuz setting deliverytime means it has been delivered to checkpoint
+        public async Task<bool> SetOrderDeliveredTime(int orderId, DateTime deliveredTime)
+        {
+            var lastTrace = await GetLastTrackable(orderId);
+            if (lastTrace == null)
+                throw new ArgumentException($"Provided order id {orderId} has no trace but attempted to update delivery time to {deliveredTime}");
+            if (lastTrace.DeliveryStatus != DeliveryStatus.Delivering_to)
+                throw new ArgumentException($"Attempted to update delivery time for the order that is not delivering");
+            lastTrace.DeliveryStatus = DeliveryStatus.Sorting;
+            lastTrace.DeliveryDate = deliveredTime;
+            return true;
         }
     }
 }

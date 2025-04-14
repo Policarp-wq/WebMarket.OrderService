@@ -1,7 +1,30 @@
-CREATE TYPE order_status AS ENUM ('processing','packing_up', 'delivering', 'delivered', 'completed', 'denied');
+CREATE TABLE order_status(
+  status_id SMALLINT PRIMARY KEY,
+  code text UNIQUE NOT NULL
+);
+
+INSERT INTO order_status (status_id, code) VALUES
+(1, 'PROCESSING'),
+(2, 'PACKING_UP'),
+(3, 'DELIVERING'),
+(4, 'DELIVERED'),
+(5, 'COMPLETED'),
+(6, 'DENIED');
+
+CREATE TABLE delivery_status(
+  status_id SMALLINT PRIMARY KEY,
+  code text UNIQUE NOT NULL
+);
+INSERT INTO delivery_status (status_id, code) VALUES
+(1, 'DELIVERING_TO'),
+(2, 'SORTING'),
+(3, 'SENT');
+
+
 CREATE TABLE checkpoint(
     checkpoint_id serial PRIMARY KEY,
     owner_id integer NOT NULL,
+    address text,
     is_delivery_point BOOLEAN NOT NULL,
     location geometry NOT NULL
 );
@@ -11,17 +34,24 @@ CREATE TABLE customer_order(
     customer_id integer NOT NULL,
     product_id integer NOT NULL,
     delivery_point_id integer NOT NULL REFERENCES checkpoint(checkpoint_id) ON DELETE RESTRICT,
-    checkpoint_id integer NOT NULL REFERENCES checkpoint(checkpoint_id) ON DELETE RESTRICT, /** Can insert not delivery **/
-    status order_status DEFAULT 'processing',
+    status SMALLINT DEFAULT 1 REFERENCES order_status(status_id) ON DELETE CASCADE,
     track_number VARCHAR(9) not null UNIQUE CHECK (LENGTH(track_number) = 9), /** Performance issues **/
     created_at timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE customer_history(
-  id serial PRIMARY KEY,
-  cutomer_id integer NOT NULL,
-  product_id integer NOT NULL,
-  order_date timestamp NOT NULL
+CREATE TABLE order_status_story(
+  story_id serial PRIMARY KEY,
+  order_id integer NOT NULL REFERENCES customer_order(order_id),
+  status SMALLINT NOT NULL REFERENCES order_status(status_id) ON DELETE CASCADE,
+  change_date timestamp NOT NULL
+);
+
+CREATE TABLE order_trace(
+  trace_id serial PRIMARY KEY,
+  order_id integer NOT NULL REFERENCES customer_order(order_id) ON DELETE CASCADE,
+  checkpoint_id integer NOT NULL REFERENCES checkpoint(checkpoint_id),
+  delivery_status SMALLINT REFERENCES delivery_status(status_id) ON DELETE CASCADE,
+  delivery_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 create or replace function fn_GetClosestPoint(given geometry)

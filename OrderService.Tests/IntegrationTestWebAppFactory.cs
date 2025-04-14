@@ -126,6 +126,7 @@ namespace OrderService.Tests
             {
                 DbAdapter = DbAdapter.Postgres,
                 SchemasToInclude = ["public"],
+                TablesToIgnore = ["order_status", "delivery_status"]
             });
         }
 

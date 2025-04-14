@@ -16,7 +16,7 @@ namespace WebMarket.OrderService.Repositories
             var deliveryPoint = await _context.Checkpoints.FindAsync(deliveryPointID);
             if (deliveryPoint == null || !deliveryPoint.IsDeliveryPoint)
                 throw new ArgumentException($"Provided delivery checkpoint is not delivery or doesn't exist");
-            var res = await _dbSet.AddAsync(new CustomerOrder()
+            var res = _dbSet.Add(new CustomerOrder()
             {
                 CustomerId = customerID,
                 ProductId = productId,
