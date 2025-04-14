@@ -23,7 +23,7 @@ namespace WebMarket.OrderService.Services
             var id = await _redis.GetInt(GetRedisTrackKey(trackNumber));
             if (id.HasValue)
                 return id.Value;
-            var order = await _orderRepository.GetOrderById(trackNumber);
+            var order = await _orderRepository.GetOrderInfo(trackNumber);
             if (order != null)
             {
                 await _redis.Save(trackNumber, order.OrderId.ToString());

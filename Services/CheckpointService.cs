@@ -29,7 +29,7 @@ namespace WebMarket.OrderService.Services
             var res = await _checkpointRepository.FindClosest(point);
             if(res is null)
                 return null;
-            return res;
+            return (CheckpointInfo)res;
         }
         //TODO: optimize
         public async Task<List<CheckpointInfo>> GetAll()
@@ -54,7 +54,7 @@ namespace WebMarket.OrderService.Services
         public async Task<CheckpointInfo> RegisterPoint(int userId, Point point, bool IsDeliveryPoint)
         {
             string? address = await _geocoder.GetAddressByLongLat(point);
-            return await _checkpointRepository.RegisterPoint(userId, point, IsDeliveryPoint, address);
+            return (CheckpointInfo)(await _checkpointRepository.RegisterPoint(userId, point, IsDeliveryPoint, address));
         }
     }
 }

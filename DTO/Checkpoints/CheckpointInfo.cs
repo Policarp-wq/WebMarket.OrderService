@@ -21,7 +21,7 @@ namespace WebMarket.OrderService.DTO.Checkpoints
             this.IsDelivery = IsDelivery;
             this.Addres = Address;
         }
-        public static implicit operator CheckpointInfo(Checkpoint checkpoint)
+        public static explicit operator CheckpointInfo(Checkpoint checkpoint)
         {
             return new CheckpointInfo(checkpoint.CheckpointId, checkpoint.Location, checkpoint.OwnerId,checkpoint.IsDeliveryPoint, checkpoint.Address);
         }

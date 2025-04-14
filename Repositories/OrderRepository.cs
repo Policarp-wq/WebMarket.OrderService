@@ -59,32 +59,16 @@ namespace WebMarket.OrderService.Repositories
             return await _dbSet.AsNoTracking().ToListAsync();
         }
 
-        public async Task<OrderUpdateReport> UpdateOrderInfo(OrderUpdateInfo info)
-        {
-            var order = await _dbSet
-                .Include(o => o.DeliveryPoint)
-                .FirstOrDefaultAsync(o => o.TrackNumber.Equals(info.TrackNumber));
-            if (order == null)
-                throw new NotFoundException($"Failed to find order with track number: {info.TrackNumber}");
-            return await UpdateOrderInfo(order, info);
-        }
-        public async Task<OrderUpdateReport> UpdateOrderInfo(int id, OrderUpdateInfo info)
+        public async Task<bool> UpdateOrderInfo(int id, OrderStatus status)
         {
             if(!IsIdValid(id))
-                throw new ArgumentException($"StoryId {id} was invalid"); 
+                throw new ArgumentException($"Order id {id} was invalid"); 
             var order = await _dbSet
-                .Include(o => o.DeliveryPoint)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
             if (order == null)
-                throw new NotFoundException($"Failed to find order with track number: {info.TrackNumber}");
-            return await UpdateOrderInfo(order, info);
-        }
-        //requires trackable order!
-        private async Task<OrderUpdateReport> UpdateOrderInfo(CustomerOrder order, OrderUpdateInfo info)
-        {
-            throw new NotImplementedException();
-           
-            
+                throw new NotFoundException($"No order with id ${id}");
+            order.Status = status;
+            return true;
         }
 
         public async Task<List<CustomerOrder>> GetUserOrders(int userId)
@@ -96,12 +80,6 @@ namespace WebMarket.OrderService.Repositories
                 .Include(x => x.DeliveryPoint)
                 .Where(c => c.CustomerId == userId)
                 .ToListAsync();  
-        }
-
-        public async Task<List<int>> GetSupplierProcessingOrders(int supplierId)
-        {
-            throw new NotImplementedException();
-           
         }
 
         public async Task<CustomerOrder?> GetOrderById(string trackNumber)

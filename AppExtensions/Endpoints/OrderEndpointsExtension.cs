@@ -18,22 +18,21 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
         {
             builder.MapPost("createOrder", CreateOrder);
             builder.MapPatch("updateOrder", UpdateOrder);
-            builder.MapPatch("updateOrderStatus", UpdateOrderStatus);
-            builder.MapPatch("updateOrderCheckpoint", UpdateOrderCheckpoint);
             builder.MapGet("getOrders", GetOrders); 
             builder.MapGet("getOrderStatuses", GetPossibleStatuses);
             builder.MapGet("getOrderByTrackNumber", GetOrderByTrackNumber);
             builder.MapGet("getUsersOrders", GetUsersOrders);
-            builder.MapGet("getProcessingOrders", GetSupplierProcessingOrders);
             return builder;
         }
 
-        private static async Task <Ok<OrderTrackingInfo>> GetOrderByTrackNumber(IOrderService orderService, [FromQuery] string trackNumber)
+        private static readonly string[] OrderStatuses = Enum.GetNames(typeof(OrderStatus));
+
+        private static async Task <Ok<OrderInfoForCustomer>> GetOrderByTrackNumber(IOrderService orderService, [FromQuery] string trackNumber)
         {
-            return TypedResults.Ok(await orderService.GetTrackingInfo(trackNumber));
+            return TypedResults.Ok(await orderService.GetOrderInfo(trackNumber));
         }
 
-        private static async Task<Ok<List<OrderTrackingInfo>>> GetUsersOrders(IOrderService orderService, [FromQuery] int userId)
+        private static async Task<Ok<List<OrderInfoForCustomer>>> GetUsersOrders(IOrderService orderService, [FromQuery] int userId)
         {
             return TypedResults.Ok(await orderService.GetUsersOrders(userId));
         }
@@ -45,12 +44,7 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
 
         private static Ok<string[]> GetPossibleStatuses()
         {
-            return TypedResults.Ok(Enum.GetNames(typeof(OrderStatus)));
-        }
-        //check
-        private static async Task<Ok<List<int>>> GetSupplierProcessingOrders(IOrderService orderService, [FromQuery] int supplierId)
-        {
-            return TypedResults.Ok(await orderService.GetSupplierProcessingOrders(supplierId));
+            return TypedResults.Ok(OrderStatuses);
         }
 
         public static async Task<Ok<string>> CreateOrder(IOrderService orderService, OrderCreateInfo createInfo)
@@ -61,20 +55,15 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
 
         }
 
-        public static async Task<Ok<bool>> UpdateOrder(IOrderService orderService, OrderUpdateInfo orderInfo)
+        public static async Task<Results<Ok<bool>, BadRequest<string>>> UpdateOrder(IOrderService orderService, [FromQuery] string trackNumber, [FromQuery] string status)
         {
-            var updated = await orderService.UpdateOrder(orderInfo);
-            return TypedResults.Ok(updated);
+            if (Enum.TryParse(status, out OrderStatus orderStatus))
+            {
+                var updated = await orderService.UpdateOrder(trackNumber, orderStatus);
+                return TypedResults.Ok(updated);
+            }
+            return TypedResults.BadRequest($"Wrong order status: {status}");
         }
 
-        public static async Task<Ok<bool>> UpdateOrderStatus(IOrderService orderService, [FromQuery] string trackNumber, OrderStatus orderStatus)
-        {
-            return await UpdateOrder(orderService, new OrderUpdateInfo(trackNumber, null, orderStatus));
-        }
-
-        public static async Task<Ok<bool>> UpdateOrderCheckpoint(IOrderService orderService, [FromQuery] string trackNumber, int checkpointId)
-        {
-            return await UpdateOrder(orderService, new OrderUpdateInfo(trackNumber, checkpointId, null));
-        }
     }
 }

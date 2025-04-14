@@ -1,4 +1,4 @@
 ﻿namespace WebMarket.OrderService.DTO.Order
 {
-    public record OrderUpdateReport(bool Changed, int UserId, OrderInfo OrderInfo);
+    public record OrderUpdateReport(bool Changed, int UserId, OrderInfoForCustomer OrderInfo);
 }
