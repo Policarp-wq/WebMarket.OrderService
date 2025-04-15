@@ -7,7 +7,6 @@ namespace WebMarket.OrderService.Models;
 public partial class OrderStatusStory
 {
     public int StoryId { get; set; }
-
     public int OrderId { get; set; }
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public OrderStatus Status { get; set; }

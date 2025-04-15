@@ -7,8 +7,11 @@ namespace WebMarket.OrderService.Repositories
 {
     public class OrderRepository : BaseRepository<CustomerOrder>, IOrderRepository
     {
-        public OrderRepository(OrdersDbContext context) : base(context, context => context.CustomerOrders)
+        private readonly IOrderStatusStoryRepository _storyRepository;
+        public OrderRepository(OrdersDbContext context, IOrderStatusStoryRepository storyRepository) : base(context, context => context.CustomerOrders)
         {
+            //???
+            IOrderStatusStoryRepository _storyRepository = storyRepository;
         }
 
         public async Task<CustomerOrder> CreateOrder(int customerID, int productId, int deliveryPointID, string trackNumber)
@@ -16,18 +19,23 @@ namespace WebMarket.OrderService.Repositories
             var deliveryPoint = await _context.Checkpoints.FindAsync(deliveryPointID);
             if (deliveryPoint == null || !deliveryPoint.IsDeliveryPoint)
                 throw new ArgumentException($"Provided delivery checkpoint is not delivery or doesn't exist");
-            var res = _dbSet.Add(new CustomerOrder()
+            using (var transaction = _context.Database.BeginTransaction())
             {
-                CustomerId = customerID,
-                ProductId = productId,
-                DeliveryPointId = deliveryPointID,
-                DeliveryPoint = deliveryPoint,
-                TrackNumber = trackNumber,
-                Status = CustomerOrder.InitialStatus,
-            });
-            //вставляет status хотя не должен 
-            await _context.SaveChangesAsync();
-            return res.Entity;
+                var res = _dbSet.Add(new CustomerOrder()
+                {
+                    CustomerId = customerID,
+                    ProductId = productId,
+                    DeliveryPointId = deliveryPointID,
+                    DeliveryPoint = deliveryPoint,
+                    TrackNumber = trackNumber,
+                    Status = CustomerOrder.InitialStatus,
+                });
+                //вставляет status хотя не должен 
+                await _context.SaveChangesAsync();
+                await _storyRepository.InitOrder(res.Entity.OrderId);
+                transaction.Commit();
+                return res.Entity;
+            }
         }
 
 

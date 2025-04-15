@@ -9,7 +9,6 @@ namespace WebMarket.OrderService.Services
         Task<List<OrderInfoForCustomer>> GetUsersOrders(int userId);
         Task<OrderInfoForCustomer> GetOrderInfo(string trackNumber);
         Task<CustomerOrder> GerOrderInfo(string trackNumber);
-        Task<bool> UpdateOrder(string trackNumber, OrderStatus status);
         Task<List<CustomerOrder>> ListOrders();
     }
 }

@@ -18,7 +18,7 @@ public partial class OrdersDbContext : DbContext
 
     public virtual DbSet<Checkpoint> Checkpoints { get; set; }
 
-    public virtual DbSet<OrderStatusStory> CustomerHistories { get; set; }
+    public virtual DbSet<OrderStatusStory> OrderStatuses { get; set; }
 
     public virtual DbSet<CustomerOrder> CustomerOrders { get; set; }
     public virtual DbSet<OrderTrace> OrderTraceses { get; set; }

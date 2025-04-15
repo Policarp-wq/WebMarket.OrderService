@@ -115,11 +115,5 @@ namespace WebMarket.OrderService.Services
         {
             return await _orderRepository.ListOrders();
         }
-
-        public async Task<bool> UpdateOrder(string trackNumber, OrderStatus status)
-        {
-            int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
-            return await _orderRepository.UpdateOrderInfo(id, status);
-        }
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using WebMarket.OrderService.DTO.Order;
+using WebMarket.OrderService.DTO.OrderStatusStory;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.Services;
@@ -17,11 +18,15 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
         public static IEndpointRouteBuilder AddOrderEndpoints(this IEndpointRouteBuilder builder)
         {
             builder.MapPost("createOrder", CreateOrder);
-            builder.MapPatch("updateOrder", UpdateOrder);
             builder.MapGet("getOrders", GetOrders); 
             builder.MapGet("getOrderStatuses", GetPossibleStatuses);
             builder.MapGet("getOrderByTrackNumber", GetOrderByTrackNumber);
             builder.MapGet("getUsersOrders", GetUsersOrders);
+            builder.MapGet("deliverOrderToCheckpoint", DeliverOrderToCheckpoint);
+            builder.MapGet("sentToNext", SentToNext);
+            builder.MapGet("getOrderRoute", GetOrderRoute);
+            builder.MapGet("getOrderStatusStory", GetOrderStatusStory);
+
             return builder;
         }
 
@@ -30,6 +35,23 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
         private static async Task <Ok<OrderInfoForCustomer>> GetOrderByTrackNumber(IOrderService orderService, [FromQuery] string trackNumber)
         {
             return TypedResults.Ok(await orderService.GetOrderInfo(trackNumber));
+        }
+        private static async Task<Ok<bool>> DeliverOrderToCheckpoint(IOrderTraceService traceService, [FromQuery] string trackNumber)
+        {
+            return TypedResults.Ok(await traceService.SetOrderDelivered(trackNumber, DateTime.UtcNow));
+        }
+        private static async Task<Ok<bool>> SentToNext(IOrderTraceService traceService, [FromQuery] string trackNumber, int checkpointId)
+        {
+            return TypedResults.Ok(await traceService.AddRouteUnit(trackNumber, checkpointId));
+        }
+
+        private static async Task<Ok<OrderTraceRoute>> GetOrderRoute(IOrderTraceService traceService, [FromQuery]string trackNumber)
+        {
+            return TypedResults.Ok(await traceService.GetOrderRoute(trackNumber));
+        }
+        private static async Task<Ok<OrderStatusStoryForClient>> GetOrderStatusStory(IOrderStatusStoryService storyService, [FromQuery]string trackNumber)
+        {
+            return TypedResults.Ok(await storyService.GetOrderStatusStory(trackNumber));
         }
 
         private static async Task<Ok<List<OrderInfoForCustomer>>> GetUsersOrders(IOrderService orderService, [FromQuery] int userId)
@@ -53,16 +75,6 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
                 createInfo.DeliveryPointID, createInfo.ProductOwnerId);
             return TypedResults.Ok(trackNumber);
 
-        }
-
-        public static async Task<Results<Ok<bool>, BadRequest<string>>> UpdateOrder(IOrderService orderService, [FromQuery] string trackNumber, [FromQuery] string status)
-        {
-            if (Enum.TryParse(status, out OrderStatus orderStatus))
-            {
-                var updated = await orderService.UpdateOrder(trackNumber, orderStatus);
-                return TypedResults.Ok(updated);
-            }
-            return TypedResults.BadRequest($"Wrong order status: {status}");
         }
 
     }

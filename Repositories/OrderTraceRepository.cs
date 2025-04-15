@@ -10,8 +10,17 @@ namespace WebMarket.OrderService.Repositories
         {
         }
 
-        public async Task AddRouteUnit(int orderId, int checkpointId)
+        public async Task<bool> AddRouteUnit(int orderId, int checkpointId)
         {
+            var last = await GetLastTrackable(orderId);
+            if(last != null)
+            {
+                if (last.DeliveryStatus == DeliveryStatus.Delivering_to)
+                {
+                    throw new ArgumentException($"Tried to add new route unit while delivering to the current");
+                }
+                last.DeliveryStatus = DeliveryStatus.Sent;
+            }  
             _dbSet.Add(new OrderTrace
             { 
                 OrderId = orderId,
@@ -20,6 +29,7 @@ namespace WebMarket.OrderService.Repositories
                 DeliveryDate = null
             });
             await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<IEnumerable<OrderTraceRouteUnit>> GetOrderRoute(int OrderId)
@@ -45,7 +55,7 @@ namespace WebMarket.OrderService.Repositories
                 .OrderBy(t => t.DeliveryDate)
                 .LastOrDefaultAsync();
         }
-
+        //disable!
         public async Task<bool> UpdateLastTraceInfo(int orderId, DeliveryStatus status)
         {
             var lastTrace = await GetLastTrackable(orderId);
@@ -56,6 +66,7 @@ namespace WebMarket.OrderService.Repositories
             if(lastTrace.DeliveryStatus == status)
                 return false;
             lastTrace.DeliveryStatus = status;
+            await _context.SaveChangesAsync();
             return true;
         }
         //Sets delivery status to sorts cuz setting deliverytime means it has been delivered to checkpoint
@@ -68,6 +79,7 @@ namespace WebMarket.OrderService.Repositories
                 throw new ArgumentException($"Attempted to update delivery time for the order that is not delivering");
             lastTrace.DeliveryStatus = DeliveryStatus.Sorting;
             lastTrace.DeliveryDate = deliveredTime;
+            await _context.SaveChangesAsync();
             return true;
         }
     }

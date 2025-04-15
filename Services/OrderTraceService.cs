@@ -17,10 +17,10 @@ namespace WebMarket.OrderService.Services
             _trackNumberService = trackNumberService;
         }
 
-        public async Task AddRouteUnit(string trackNumber, int checkpointId)
+        public async Task<bool> AddRouteUnit(string trackNumber, int checkpointId)
         {
             int id = await _trackNumberService.GetOrderIdByTrackNumber(trackNumber);
-            await _traceRepository.AddRouteUnit(id, checkpointId);
+            return await _traceRepository.AddRouteUnit(id, checkpointId);
         }
 
         public async Task<OrderTraceRoute> GetOrderRoute(int orderId)

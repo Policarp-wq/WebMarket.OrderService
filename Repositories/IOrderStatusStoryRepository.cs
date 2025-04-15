@@ -8,5 +8,6 @@ namespace WebMarket.OrderService.Repositories
         Task<bool> UpdateStatus(int orderId, OrderStatus status);
         Task<IEnumerable<OrderStatusUnit>> GetOrderStory(int orderId);
         Task<OrderStatusUnit> GetLatestStatus(int orderId);
+        Task<bool> InitOrder(int orderId);
     }
 }
