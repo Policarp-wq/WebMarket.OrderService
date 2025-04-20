@@ -8,10 +8,8 @@ namespace WebMarket.OrderService.Repositories
     public class OrderRepository : BaseRepository<CustomerOrder>, IOrderRepository
     {
         private readonly IOrderStatusStoryRepository _storyRepository;
-        public OrderRepository(OrdersDbContext context, IOrderStatusStoryRepository storyRepository) : base(context, context => context.CustomerOrders)
+        public OrderRepository(OrdersDbContext context) : base(context, context => context.CustomerOrders)
         {
-            //???
-            IOrderStatusStoryRepository _storyRepository = storyRepository;
         }
 
         public async Task<CustomerOrder> CreateOrder(int customerID, int productId, int deliveryPointID, string trackNumber)
@@ -32,7 +30,7 @@ namespace WebMarket.OrderService.Repositories
                 });
                 //вставляет status хотя не должен 
                 await _context.SaveChangesAsync();
-                await _storyRepository.InitOrder(res.Entity.OrderId);
+                
                 transaction.Commit();
                 return res.Entity;
             }

@@ -2,7 +2,7 @@
 {
     public static class ApplicationBuilderExtensions
     {
-        public static IApplicationBuilder AddSwagger(this IApplicationBuilder app, bool isDevelopment)
+        public static IApplicationBuilder UseSwagger(this IApplicationBuilder app, bool isDevelopment)
         {
             if (isDevelopment)
             {

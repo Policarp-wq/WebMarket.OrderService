@@ -1,10 +1,11 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using System.Text.Json.Serialization;
 using WebMarket.OrderService.AppExtensions;
 using WebMarket.OrderService.Exceptions;
-using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Options;
+using WebMarket.OrderService.SupportTools;
 using WebMarket.OrderService.SupportTools.MapSupport;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,7 +39,10 @@ builder.Services.ConfigureRedis(healthCheckBuilder);
 
 
 builder.Services.RegisterHttpClient(builder.Configuration.GetValue<string>(YandexAPI.YandexGeoAPIKeyConfigName)!);
-
+if (isDevelopment)
+{
+    builder.Services.AddSeeder();
+}
 
 var app = builder.Build();
 
@@ -46,9 +50,9 @@ app.UseSerilogRequestLogging(opt =>
 {
 });
 app.UseHealthChecks("/healtz");
-app.AddSwagger(isDevelopment);
+app.UseSwagger(isDevelopment);
 app.UseExceptionHandler();
-app.AddEndpoints();
+app.UseEndpoints();
 
 var healthCheckService = app.Services.GetRequiredService<HealthCheckService>();
 var report = await healthCheckService.CheckHealthAsync();
@@ -64,6 +68,18 @@ if (report.Status != HealthStatus.Healthy)
 else
 {
     Log.Information("Service is healthy ;)");
+}
+if (isDevelopment)
+{
+    Console.WriteLine("SEEDING MODE. CONFIRM ACTION BY TYPING 'YES'");
+    using IServiceScope scope = app.Services.CreateScope();
+    var seed = scope.ServiceProvider.GetRequiredService<DBSeedService>();
+    if (seed != null && "yes".Equals(Console.ReadLine()?.ToLower()))
+    {
+        Console.WriteLine("CONFIRMED");
+        await seed.SeedDb(15, 40, 1337420);
+        Console.WriteLine("SEEDED");
+    }
 }
 app.UseHttpsRedirection();
 app.Run();

@@ -4,7 +4,7 @@ namespace WebMarket.OrderService.AppExtensions
 {
     public static class EndpointRouteBuilderExtensions
     {
-        public static IEndpointRouteBuilder AddEndpoints(this IEndpointRouteBuilder routeBuilder)
+        public static IEndpointRouteBuilder UseEndpoints(this IEndpointRouteBuilder routeBuilder)
         {
             var group = routeBuilder.MapGroup("/api");
             group.AddOrderEndpoints();

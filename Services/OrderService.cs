@@ -1,14 +1,10 @@
 ﻿using Confluent.Kafka;
-using Microsoft.AspNetCore.Connections;
-using Newtonsoft.Json;
-using StackExchange.Redis;
 using WebMarket.OrderService.DTO.Order;
 using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Repositories;
 using WebMarket.OrderService.SupportTools.Kafka;
 using WebMarket.OrderService.SupportTools.MapSupport;
-using WebMarket.OrderService.SupportTools.Redis;
 
 namespace WebMarket.OrderService.Services
 {
@@ -19,16 +15,19 @@ namespace WebMarket.OrderService.Services
         private readonly ICheckpointRepository _checkpointRepository;
         private readonly ITrackNumberService _trackNumberService;
         private readonly IKafkaMessageProducer _producer;
+        private readonly IOrderStatusStoryRepository _storyRepository;
         public OrderService(IOrderRepository orderRepository,  ITrackNumberService trackNumberService,
             ICheckpointRepository checkpointRepository,
             IKafkaMessageProducer messageProducer,
-            IMapGeocoder geocoder
+            IMapGeocoder geocoder,
+            IOrderStatusStoryRepository storyRepository
             )   
         {
             _orderRepository = orderRepository;
             _trackNumberService = trackNumberService;
             _checkpointRepository = checkpointRepository;
             _producer = messageProducer;
+            _storyRepository = storyRepository;
         }
 
 
@@ -79,6 +78,7 @@ namespace WebMarket.OrderService.Services
             var createdOrder = await _orderRepository.CreateOrder(customerID, productID, deliverypointID, trackNum);
             if (createdOrder == null)
                 throw new PrivateServerException($"Created null order ?? cust: {customerID}, prod: {productID}, deliv: {deliverypointID}, track: {trackNum}");
+            await _storyRepository.InitOrder(createdOrder.OrderId);
             await SetIdForTrackNumber(trackNum, createdOrder.OrderId);
             await SendOrderCreatedEvent(createdOrder, productOwnerId);
             //await SendOrderUpdatedEvent(await CreateTrackingInfo(createdOrder));

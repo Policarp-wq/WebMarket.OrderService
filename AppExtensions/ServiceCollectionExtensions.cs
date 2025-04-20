@@ -74,6 +74,12 @@ namespace WebMarket.OrderService.AppExtensions
             return services;
         }
 
+        public static IServiceCollection AddSeeder(this IServiceCollection services)
+        {
+            services.AddScoped<DBSeedService>();
+            return services;
+        }
+
         public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
         {
             services.AddScoped<ICheckpointService, CheckpointService>();
@@ -84,6 +90,8 @@ namespace WebMarket.OrderService.AppExtensions
             services.AddScoped<ITrackNumberService, TrackNumberService>(); // requires repo which is scoped
             services.AddScoped<IOrderTraceRepository, OrderTraceRepository>();
             services.AddScoped<IOrderTraceService, OrderTraceService>();
+            services.AddScoped<IOrderStatusStoryRepository, OrderStatusStoryRepository>();
+            services.AddScoped<IOrderStatusStoryService, OrderStatusStoryService>();
             return services;
         }
 
