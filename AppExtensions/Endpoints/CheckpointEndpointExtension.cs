@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.Geometries;
+using WebMarket.OrderService.Auth;
 using WebMarket.OrderService.DTO.Checkpoints;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Services;
@@ -14,13 +15,19 @@ namespace WebMarket.OrderService.AppExtensions.Endpoints
     {
         public static IEndpointRouteBuilder AddCheckpoints(this IEndpointRouteBuilder builder)
         {
+            builder.MapGet("getjwt", GetJwt);
             builder.MapPost("registerCheckpoint", RegisterCheckpoint);
             builder.MapGet("findClosestPoint", FindClosest);
             builder.MapGet("getAddressFromLongLat", GetAddress);
-            builder.MapGet("getCheckpoints", GetAllCheckpoints);
+            builder.MapGet("getCheckpoints", GetAllCheckpoints).RequireAuthorization();
             builder.MapGet("getOwnersPoints", GetOwnersCheckpoints);
             builder.MapGet("getDeliveryPoints", GetDeliveryCheckpoints);
             return builder;
+        }
+
+        public static Ok<string> GetJwt(IJwtProvider jwtProvider)
+        {
+            return TypedResults.Ok(jwtProvider.GenerateToken(new Auth.ApplicationUser() { Login = "1", Role = AppRole.Admin }));
         }
 
         public static async Task<Ok<List<CheckpointInfo>>> GetDeliveryCheckpoints(ICheckpointService checkpointService)

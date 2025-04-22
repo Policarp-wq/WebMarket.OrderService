@@ -1,11 +1,17 @@
 ﻿using Confluent.Kafka;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using StackExchange.Redis;
 using System.Data.Common;
+using System.Text;
+using WebMarket.OrderService.Auth;
 using WebMarket.OrderService.Models;
 using WebMarket.OrderService.Options;
 using WebMarket.OrderService.Repositories;
@@ -71,6 +77,30 @@ namespace WebMarket.OrderService.AppExtensions
                 return redisOpt.ConnectionString;
             });
             services.AddSingleton<IRedisHandler, RedisHandler>();
+            return services;
+        }
+
+        public static IServiceCollection AddJWTAuth(this IServiceCollection services, JwtOptions options)
+        {
+            services.ConfigureOptions<JwtOptionsSetup>();
+            services.AddSingleton<IJwtProvider, JwtProvider>();
+           services
+                .AddAuthentication()
+                .AddJwtBearer(opt =>
+                {
+                    opt.TokenValidationParameters = new()
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = options.KeyIssuer,
+                        ValidAudience = options.Audience,
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(options.SecretKey))
+                    };
+                });
+            services.AddAuthorization();
             return services;
         }
 

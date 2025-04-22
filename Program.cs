@@ -1,8 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Serilog;
+using System;
 using System.Text.Json.Serialization;
 using WebMarket.OrderService.AppExtensions;
+using WebMarket.OrderService.Auth;
 using WebMarket.OrderService.Exceptions;
 using WebMarket.OrderService.Options;
 using WebMarket.OrderService.SupportTools;
@@ -37,7 +40,9 @@ builder.Services.ConnectDb(healthCheckBuilder, isDevelopment);
 builder.Services.ConfigureOptions<RedisOptionsSetup>();
 builder.Services.ConfigureRedis(healthCheckBuilder);
 
+builder.Services.AddJWTAuth(builder.Configuration.GetSection(JwtOptionsSetup.JWT_SECTION).Get<JwtOptions>()!);
 
+ 
 builder.Services.RegisterHttpClient(builder.Configuration.GetValue<string>(YandexAPI.YandexGeoAPIKeyConfigName)!);
 if (isDevelopment)
 {
@@ -52,7 +57,6 @@ app.UseSerilogRequestLogging(opt =>
 app.UseHealthChecks("/healtz");
 app.UseSwagger(isDevelopment);
 app.UseExceptionHandler();
-app.UseEndpoints();
 
 var healthCheckService = app.Services.GetRequiredService<HealthCheckService>();
 var report = await healthCheckService.CheckHealthAsync();
@@ -61,7 +65,7 @@ if (report.Status != HealthStatus.Healthy)
     Log.Fatal("Health check failed at startup: {Status}", report.Status);
     foreach (var entry in report.Entries)
     {
-        Log.Fatal("{Key}: {Value}", entry.Key, entry.Value.Status);
+        Log.Fatal("{JWT_SECTION}: {Value}", entry.Key, entry.Value.Status);
     }
     return;
 }
@@ -69,7 +73,7 @@ else
 {
     Log.Information("Service is healthy ;)");
 }
-if (isDevelopment)
+if (false && isDevelopment)
 {
     Console.WriteLine("SEEDING MODE. CONFIRM ACTION BY TYPING 'YES'");
     using IServiceScope scope = app.Services.CreateScope();
@@ -81,7 +85,14 @@ if (isDevelopment)
         Console.WriteLine("SEEDED");
     }
 }
-app.UseHttpsRedirection();
+app.UseCors(policy =>
+    policy.AllowAnyOrigin()
+          .AllowAnyMethod()
+          .AllowAnyHeader());
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseEndpoints();
 app.Run();
 
 public partial class Program { }

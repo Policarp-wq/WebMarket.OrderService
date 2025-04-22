@@ -14,13 +14,13 @@ namespace WebMarket.OrderService.SupportTools.Kafka
 
         public async Task<DeliveryResult<string, string>> ProduceMessage(string topic, string key, string message)
         {
-            _logger.LogDebug("Kafka: producing message to {OrderCreatedTopic} with key {Key}", topic, key);
+            _logger.LogDebug("Kafka: producing message to {OrderCreatedTopic} with key {JWT_SECTION}", topic, key);
             var res = await _mainProducer.ProduceAsync(topic, new Message<string, string>()
             {
                 Key = key,
                 Value = message
             });
-            _logger.LogDebug("Kafka: produced message to {OrderCreatedTopic} with key {Key}", topic, key);
+            _logger.LogDebug("Kafka: produced message to {OrderCreatedTopic} with key {JWT_SECTION}", topic, key);
             return res;
         }
     }
